@@ -7,9 +7,15 @@
 //============================================================================
 
 #include <iostream>
+#include <log4cxx/logger.h>
+#include <log4cxx/propertyconfigurator.h>
+
 using namespace std;
 
 int main() {
-	cout << "!!!Hello World!!!" << endl; // prints !!!Hello World!!!
+	log4cxx::PropertyConfigurator::configure("log.cfg");
+	log4cxx::LoggerPtr pLogger = log4cxx::Logger::getRootLogger();
+	LOG4CXX_FATAL(pLogger,"This is a fatal error!");
+
 	return 0;
 }
