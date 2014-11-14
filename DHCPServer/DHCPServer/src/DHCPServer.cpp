@@ -7,9 +7,16 @@
 //============================================================================
 
 #include <iostream>
+#include <sys/socket.h>
+#include <sys/types.h>
 using namespace std;
 
+
 int main() {
+
+int s = socket(AF_INET,SOCK_DGRAM,0);
+
+
 
 	return 0;
 }
