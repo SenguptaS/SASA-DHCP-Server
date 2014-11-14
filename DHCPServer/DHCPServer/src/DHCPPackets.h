@@ -40,77 +40,75 @@
 struct DiscoverPacket{
 	char mOpField;	//1 byte
 	char mHeaderType; // 1 byte
-	unsigned int mHeaderLength;
-	unsigned int mHops;
-	unsigned int mTransactionId;
-	unsigned int mSeconds;
-	char mFlags;
-	unsigned int mClientAddress;
-	unsigned int mYourAddress;
-	unsigned int mServerAddress;
-	unsigned int mGatewayAddress;
-	unsigned long int mClientHardwareAddress;
-	char mServerName;
-	char mBootFileName;
-	char mOptions;
+	char mHeaderLength; // 1 byte
+	char mHops; // 1 byte
+	unsigned int mTransactionId; // 4 byte
+	unsigned short mSeconds; // 2 byte
+	unsigned short mFlags; // 2 byte
+	unsigned int mClientAddress; // 4 byte
+	unsigned int mYourAddress; // 4 byte
+	unsigned int mServerAddress; // 4 byte
+	unsigned int mGatewayAddress; // 4 byte
+	unsigned long int mClientHardwareAddress; // 16 byte
+	char 	mServerName[64]; // 64 byte
+	char mBootFileName[128]; // 128 byte
 
 };
 
 //Request Packet
 struct RequestPacket{
-	char mOpField;
-	char mHeaderType;
-	unsigned int mHeaderLength;
-	unsigned int mHops;
-	unsigned int mTransactionId;
-	unsigned int mSeconds;
-	char mFlags;
-	unsigned int mClientAddress;
-	unsigned int mYourAddress;
-	unsigned int mServerAddress;
-	unsigned int mGatewayAddress;
-	unsigned long int mClientHardwareAddress;
-	char mServerName;
-	char mBootFileName;
-	char mOptions;
+	char mOpField;	//1 byte
+	char mHeaderType; // 1 byte
+	char mHeaderLength; // 1 byte
+	char mHops; // 1 byte
+	unsigned int mTransactionId; //4 byte
+	unsigned short mSeconds; // 2 byte
+	unsigned short mFlags; // 2 byte
+	unsigned int mClientAddress; // 4 byte
+	unsigned int mYourAddress; // 4 byte
+	unsigned int mServerAddress; // 4 byte
+	unsigned int mGatewayAddress; // 4 byte
+	unsigned long int mClientHardwareAddres; // 16 byte
+	char mServerName[64]; // 64 byte
+	char mBootFileName[128]; // 128 byte
 
 };
-
 //Response Packet
 struct ResponsePacket{
-	char mOpField;
-	char mHeaderType;
-	unsigned int mHeaderLength;
-	unsigned int mHops;
-	unsigned int mTransactionId;
-	unsigned int mSeconds;
-	char mFlags;
-	unsigned int mClientAddress;
-	unsigned int mYourAddress;
-	unsigned int mServerAddress;
-	unsigned int mGatewayAddress;
-	unsigned long int mClientHardwareAddress;
-	char mServerName;
-	char mBootFileName;
-	char mOptions;
+	char mOpField;	//1 byte
+	char mHeaderType; // 1 byte
+	char mHeaderLength; // 1 byte
+	char mHops; //1 byte
+	unsigned int mTransactionId; // 4 byte
+	unsigned short mSeconds; // 2 byte
+	unsigned short mFlags; // 2 byte
+	unsigned int mClientAddress; // 4 byte
+	unsigned int mYourAddress; // 4 byte
+	unsigned int mServerAddress; // 4 byte
+	unsigned int mGatewayAddress; // 4 byte
+	unsigned long int mClientHardwareAddress; // 16 byte
+	char mServerName[64]; // 64 byte
+	char mBootFileName[128]; // 128 byte
+
 };
 
 //Acknowledgment Packet
 struct AcknowledgmentPacket{
-	char mOpField;
-	char mHeaderType;
-	unsigned int mHeaderLength;
-	unsigned int mHops;
-	unsigned int mTransactionId;
-	unsigned int mSeconds;
-	char mFlags;
-	unsigned int mClientAddress;
-	unsigned int mYourAddress;
-	unsigned int mServerAddress;
-	unsigned int mGatewayAddress;
-	unsigned long int mClientHardwareAddress;
-	char mServerName;
-	char mBootFileName;
-	char mOptions;
+	char mOpField;	//1 byte
+	char mHeaderType; // 1 byte
+	char mHeaderLength; // 1 byte
+	char mHops; // 1 byte
+	unsigned int mTransactionId; // 4 byte
+	unsigned short mSeconds;// 2 byte
+	unsigned short mFlags; // 2 byte
+	unsigned int mClientAddress; // 4 byte
+	unsigned int mYourAddress; // 4 byte
+	unsigned int mServerAddress; // 4 byte
+	unsigned int mGatewayAddress; // 4 byte
+	unsigned long int mClientHardwareAddress; // 16 byte
+	char mServerName[64]; // 64 byte
+	char mBootFileName[128]; // 128 byte
+
 };
+
 
