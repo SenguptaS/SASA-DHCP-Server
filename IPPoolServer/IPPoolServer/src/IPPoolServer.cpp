@@ -21,8 +21,8 @@ int main() {
 	LOG4CXX_INFO(pLogger,"IPPool Starting up - " << ctime(&mTimeNow));
 
 	//testing db connection
-	databaseConnection lDbConn;
-	lDbConn.createConnection();
+	//databaseConnection lDbConn;
+	//lDbConn.createConnection();
 
 	return 0;
 }
