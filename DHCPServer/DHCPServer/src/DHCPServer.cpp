@@ -12,6 +12,10 @@
 #include <log4cxx/logger.h>
 #include <log4cxx/propertyconfigurator.h>
 
+#include <errno.h>
+#include <string.h>
+
+#include <netinet/in.h>
 using namespace std;
 
 int main() {
@@ -22,7 +26,20 @@ log4cxx::PropertyConfigurator::configure("config/log.cfg");
 
 int s = socket(AF_INET,SOCK_DGRAM,0);
 
+	if(s <0 )
+	{
+		LOG4CXX_ERROR(pLogger,"Failed to create udp socket - " << strerror(errno));
+		return 0;
+	}
+	struct sockaddr_in SocketAddr;
+	SocketAddr.sin_addr.s_addr=0;
+	SocketAddr.sin_family=AF_INET;
+	SocketAddr.sin_port=htons(67);
 
+ 	if (bind(s,(struct sockaddr*) &SocketAddr,sizeof(sockaddr_in)) < 0){
 
-	return 0;
+ 		LOG4CXX_FATAL(pLogger," bind failed - " << strerror(errno));
+ 		return 0;
+ 	}
+	return 0; // Bind Successful from Port 67
 }
