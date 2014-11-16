@@ -78,7 +78,7 @@ int databaseConnection::fireQuery(){
 		else{
 			Query lQuery = mConn.query(mQuery.c_str());
 			LOG4CXX_INFO(mPLogger,"Query to the database set as "<< mQuery);
-			if(this->mResult = lQuery.store()){
+			if(this->mResult == lQuery.store()){
 				LOG4CXX_INFO(mPLogger, "Data successfully retrieved from the database..");
 				return 0;
 			}
@@ -102,10 +102,5 @@ void databaseConnection::setMQuery(const String lQuery){
 StoreQueryResult databaseConnection::getMResult(){
 	return mResult;
 }
-
-
-
-
-
 
 #endif /* DATABASECONNECTION_H_ */
