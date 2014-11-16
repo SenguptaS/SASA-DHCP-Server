@@ -28,7 +28,7 @@ public:
 
 	databaseConnection();
 	int fireQuery();
-	void setMQuery(String lQuery);
+	void setMQuery(std::string lQuery);
 	StoreQueryResult getMResult();
 
 private:
@@ -95,7 +95,7 @@ int databaseConnection::fireQuery(){
 	}
 }
 
-void databaseConnection::setMQuery(const String lQuery){
+void databaseConnection::setMQuery(const std::string lQuery){
 	this->mQuery = lQuery;
 }
 
