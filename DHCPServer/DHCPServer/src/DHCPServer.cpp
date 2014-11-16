@@ -26,7 +26,7 @@ int main() {
 	log4cxx::LoggerPtr pLogger = log4cxx::Logger::getLogger("SASA-DHCPSERVER");
 	time_t mTimeNow = time(NULL);
 	LOG4CXX_INFO(pLogger, "SASA DHCP Server Starting up - " << ctime(&mTimeNow));
-
+	DiscoverPacket *pDiscoverPacket;
 	int s = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (s < 0) {
@@ -70,7 +70,7 @@ int main() {
 		for (int lCtr = 0; lCtr < lSizeOfPacketRecvd; lCtr++) {
 			printf("0x%02X ", buffer[lCtr]);
 		}
-		DiscoverPacket *pDiscoverPacket = (DiscoverPacket*) buffer;
+		pDiscoverPacket = (DiscoverPacket*) buffer;
 
 		int bConsumed = 0;
 		int bLeft = lSizeOfPacketRecvd - sizeof(DiscoverPacket);
@@ -92,11 +92,8 @@ int main() {
 			bConsumed += 2 + bLen;
 			pOptionsPtr += 2+bLen;
 
-			}
-		}
 
-
-		if (pDiscoverPacket->mOpField == 1) {
+		if (pDiscoverPacket->mOpField == 1){
 
 			if (pDiscoverPacket->mServerAddress == 0) {
 				LOG4CXX_INFO(pLogger,
@@ -119,6 +116,7 @@ int main() {
 					" DHCP ACK - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : "<< pDiscoverPacket->mClientHardwareAddress);
 		}
 //		LOG4CXX_DEBUG(pLogger,lOss.str());
+	}
 	}
 }
 
