@@ -20,9 +20,9 @@ public:
 	IPPool();
 	virtual ~IPPool();
 	int InitializePool();
-	int AddIPRange(std::string lStartingAddress, int nNumberOfIPS );
-	int SetHoles(std::string lStartingAddress, int nNumberOfIPS );
-	int SetAvailable(std::string lStartingAddress, int nNumberOfIPS );
+	int AddIPRange(std::string lStartingAddress,unsigned int nNumberOfIPS );
+	int SetHoles(std::string lStartingAddress,unsigned int nNumberOfIPS );
+	int SetAvailable(std::string lStartingAddress,unsigned int nNumberOfIPS );
 	int GetNextFreeIP(std::string& lNextFreeIP);
 	int ReleaseIP(std::string lIPAddress);
 };
