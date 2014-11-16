@@ -91,7 +91,10 @@ int main() {
 					"GOT Option:" <<(int) bOption << " with Length: " << (int) bLen);
 			bConsumed += 2 + bLen;
 			pOptionsPtr += 2+bLen;
+
+			}
 		}
+
 
 		if (pDiscoverPacket->mOpField == 1) {
 
