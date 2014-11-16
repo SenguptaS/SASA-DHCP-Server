@@ -12,7 +12,7 @@
 using namespace std;
 
 const string ROOT_LOGGER = "SASA-IPPOOL";
-
+const int BUFFER_SIZE = 1024;
 
 
 
