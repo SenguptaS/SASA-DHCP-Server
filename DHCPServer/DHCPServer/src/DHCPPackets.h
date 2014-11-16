@@ -35,7 +35,7 @@
 
 
 */
-
+#pragma pack(push,1)
 //Discover Packet
 struct DiscoverPacket{
 	char mOpField;	//1 byte
@@ -49,10 +49,10 @@ struct DiscoverPacket{
 	unsigned int mYourAddress; // 4 byte
 	unsigned int mServerAddress; // 4 byte
 	unsigned int mGatewayAddress; // 4 byte
-	unsigned long int mClientHardwareAddress; // 16 byte
+	char mClientHardwareAddress[16]; // 16 byte
 	char 	mServerName[64]; // 64 byte
 	char mBootFileName[128]; // 128 byte
-
+	char mMagicCookie[4]; // 4 Bytes
 };
 
 //Request Packet
@@ -110,5 +110,4 @@ struct AcknowledgmentPacket{
 	char mBootFileName[128]; // 128 byte
 
 };
-
-
+#pragma pack(pop);
