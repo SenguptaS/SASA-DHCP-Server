@@ -27,11 +27,15 @@ int IPPool::InitializePool() {
 
 int IPPool::AddIPRange(std::string lStartingAddress,
 		unsigned int nNumberOfIPS) {
+
 	in_addr lAddr;
+
 	in_addr_t lAddress = inet_addr(lStartingAddress.c_str());
 	std::ostringstream lOss;
 	unsigned int lNoIPAdded = 0;
+
 	while (nNumberOfIPS > 0) {
+		lAddr.s_addr = lAddress;
 		lOss.str("");
 		lOss << "INSERT INTO `ip_pool` (`ip_address`,`flag`) VALUES('"
 				<< inet_ntoa(lAddr) << "','N');";
@@ -84,6 +88,7 @@ int IPPool::SetAvailable(std::string lStartingAddress,
 	std::ostringstream lOss;
 	unsigned int lNoIPMarked = 0;
 	while (nNumberOfIPS > 0) {
+		lAddr.s_addr = lAddress;
 		lOss.str("");
 		lOss << inet_ntoa(lAddr);
 		if (this->AddIPRange(lOss.str(), 1)) {
@@ -106,13 +111,55 @@ int IPPool::SetAvailable(std::string lStartingAddress,
 		}
 	}
 	return lNoIPMarked;
-
 }
 
 int IPPool::GetNextFreeIP(std::string& lNextFreeIP) {
+	std::ostringstream lOss;
+	lOss << "SELECT * FROM `ip_pool` WHERE `flag`='N' LIMIT 1";
+	mDatabaseConnection.setMQuery(lOss.str());
 
+	if( mDatabaseConnection.fireQuery() < 0 )
+	{
+		LOG4CXX_ERROR(pLogger,"Failed to get free ip from pool");
+		return -1;
+	}
+
+	StoreQueryResult lResult = mDatabaseConnection.getMResult();
+	if(lResult == NULL || lResult.num_rows() <=0)
+	{
+		LOG4CXX_ERROR(pLogger,"No free ip address available in pool");
+		return -1;
+	}
+
+	lOss.str("");
+	lOss << (string) lResult[0]["ip_address"];
+	lNextFreeIP = lOss.str();
+
+	if( this->SetIPAddressState(lNextFreeIP,true) < 0)
+	{
+		lNextFreeIP ="";
+		return -1;
+	}
+	return 0;
 }
 
 int IPPool::ReleaseIP(std::string lIPAddress) {
+	return this->SetIPAddressState(lIPAddress, false);
+}
 
+
+int IPPool::SetIPAddressState(std::string lIPAddress, bool lInUse)
+{
+	std::ostringstream lOss;
+	lOss << "UPDATE `ip_pool` SET `flag` = '" << (lInUse?"A":"N") << "'";
+
+	mDatabaseConnection.setMQuery(lOss.str());
+
+	if( mDatabaseConnection.fireQuery() < 0 )
+	{
+		LOG4CXX_ERROR(pLogger,"Failed to update status of IP: " << lIPAddress << " to " << (lInUse?"A":"N") );
+		return -1;
+	}
+	LOG4CXX_INFO(pLogger,"Set status of IP Address: " << lIPAddress << " to " << (lInUse?"A":"N"));
+	return 0;
 }

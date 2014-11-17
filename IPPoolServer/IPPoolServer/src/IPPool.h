@@ -25,6 +25,10 @@ public:
 	int SetAvailable(std::string lStartingAddress,unsigned int nNumberOfIPS );
 	int GetNextFreeIP(std::string& lNextFreeIP);
 	int ReleaseIP(std::string lIPAddress);
+
+private:
+	int SetIPAddressState(std::string lIPAddress, bool lInUse);
+
 };
 
 #endif /* IPPOOL_H_ */
