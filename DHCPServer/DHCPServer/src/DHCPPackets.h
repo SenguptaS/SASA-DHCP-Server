@@ -108,6 +108,16 @@ struct AcknowledgmentPacket{
 	unsigned long int mClientHardwareAddress; // 16 byte
 	char mServerName[64]; // 64 byte
 	char mBootFileName[128]; // 128 byte
+};
+	struct RequestPacketPS{
+
+	char mProtocolType;//1 byte
+	unsigned short mOpField;//1 byte
+	unsigned short mServerId;//2 byte
+	unsigned int mChecksum;//4 byte
+	char mSourceHardwareAddress[6];//6 byte
+	unsigned int mRequestId;//4 byte
+	unsigned int mPreviousIP;//4 byte
 
 };
 #pragma pack(pop);
