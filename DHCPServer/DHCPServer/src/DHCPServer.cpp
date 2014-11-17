@@ -7,17 +7,16 @@
 //============================================================================
 
 #include <iostream>
-#include <sys/socket.h>
 #include <sys/types.h>
 #include <log4cxx/logger.h>
 #include <log4cxx/propertyconfigurator.h>
 #include <stdio.h>
-
 #include <errno.h>
 #include <string.h>
-
-#include <netinet/in.h>
 #include "DHCPPackets.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 using namespace std;
 
@@ -78,32 +77,11 @@ int main() {
 		LOG4CXX_DEBUG(pLogger,
 				"bConsumed: " << bConsumed << " bLeft: " << bLeft << " Op:" << (int) *pOptionsPtr);
 
-		while (bConsumed < bLeft) {
-			unsigned char bOption = *pOptionsPtr;
-			if(bOption == 0xFF )
-			{
-				LOG4CXX_INFO(pLogger,"End of options variable field");
-				break;
-			}
-
-			char bLen = *(pOptionsPtr+1);
-			LOG4CXX_INFO(pLogger,
-					"GOT Option:" <<(int) bOption << " with Length: " << (int) bLen);
-			bConsumed += 2 + bLen;
-			pOptionsPtr += 2+bLen;
-
-
-		if (pDiscoverPacket->mOpField == 1){
+		if (pDiscoverPacket->mOpField == 1) {
 
 			if (pDiscoverPacket->mServerAddress == 0) {
 				LOG4CXX_INFO(pLogger,
-						" DHCP Discover - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : " <<
-						(int) pDiscoverPacket->mClientHardwareAddress[0] << ":" <<
-						(int) pDiscoverPacket->mClientHardwareAddress[1] << ":" <<
-						(int) pDiscoverPacket->mClientHardwareAddress[2] << ":" <<
-						(int) pDiscoverPacket->mClientHardwareAddress[3] << ":" <<
-						(int) pDiscoverPacket->mClientHardwareAddress[4] << ":" <<
-						(int) pDiscoverPacket->mClientHardwareAddress[5] );
+						" DHCP Discover - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : " << (int) pDiscoverPacket ->mClientHardwareAddress[0] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[1] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[2] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[3] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[4] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[5]);
 
 			} else {
 				LOG4CXX_INFO(pLogger,
@@ -115,8 +93,85 @@ int main() {
 			LOG4CXX_INFO(pLogger,
 					" DHCP ACK - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : "<< pDiscoverPacket->mClientHardwareAddress);
 		}
+
+		while (bConsumed < bLeft) {
+			unsigned char bOption = *pOptionsPtr;
+			if (bOption == 0xFF) {
+				LOG4CXX_INFO(pLogger, "End of options variable field");
+				break;
+			}
+
+			char bLen = *(pOptionsPtr + 1);
+			LOG4CXX_INFO(pLogger,
+					"GOT Option:" <<(int) bOption << " with Length: " << (int) bLen);
+
+			if (bOption == 53) {
+				char bData = *(pOptionsPtr + 2);
+
+				if (bData == 1) {
+
+					LOG4CXX_INFO(pLogger, " Value(1): DHCPDISCOVER");
+				} else if (bData == 2) {
+
+					LOG4CXX_INFO(pLogger, " Value(2): DHCPOFFER");
+				} else if (bData == 3) {
+
+					LOG4CXX_INFO(pLogger, " Value(3): DHCPREQUEST");
+				}
+
+				else if (bData == 4) {
+
+					LOG4CXX_INFO(pLogger, " Value(4): DHCPDECLINE");
+				} else if (bData == 5) {
+
+					LOG4CXX_INFO(pLogger, " Value(5): DHCPACK");
+				} else if (bData == 6) {
+
+					LOG4CXX_INFO(pLogger, " Value(6): DHCPNACK");
+				} else if (bData == 7) {
+
+					LOG4CXX_INFO(pLogger, " Value(7): DHCPRELEASE");
+				}
+
+				else {
+
+					LOG4CXX_ERROR(pLogger, " UNKNOWN DHCP OPTION ");
+				}
+			}
+
+			else if (bOption == 61) {
+				char bType = *(pOptionsPtr + 2);
+				char lClientMac[6];
+
+				if (bType != 0x01) {
+					LOG4CXX_ERROR(pLogger,
+							"Client hardware type of " << bType << " is not yet supported");
+					return 0;
+				}
+
+				memcpy(lClientMac, (const void*) (pOptionsPtr + 3), 6);
+
+			} else if (bOption == 50) {
+
+				sockaddr_in lClientRequestedIP;
+				memcpy(&lClientRequestedIP.sin_addr.s_addr, (pOptionsPtr + 2),
+						4);
+				LOG4CXX_INFO(pLogger,
+						" Requested IP Address : "<< inet_ntoa( lClientRequestedIP.sin_addr));
+			}
+
+			else if (bOption == 12) {
+				char lClientDomainName[64];
+				memcpy((void*) lClientDomainName, (pOptionsPtr + 2), bLen);
+				lClientDomainName[(int) bLen] = 0x00;
+				LOG4CXX_INFO(pLogger, " Host Name : " <<lClientDomainName);
+			}
+
+			bConsumed += 2 + bLen;
+			pOptionsPtr += 2 + bLen;
+
 //		LOG4CXX_DEBUG(pLogger,lOss.str());
-	}
+		}
 	}
 }
 
