@@ -17,8 +17,17 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
+#include"IPPoolServerCommunicator.h"
+#include<sstream>
 using namespace std;
+
+enum REQUEST_TYPE
+{
+	DHCP_DISCOVER =1,
+	DHCP_OFFER =2,
+	DHCP_REQUEST = 3,
+	DHCP_NACK = 4
+};
 
 int main() {
 	log4cxx::PropertyConfigurator::configure("config/log.cfg");
@@ -26,9 +35,16 @@ int main() {
 	time_t mTimeNow = time(NULL);
 	LOG4CXX_INFO(pLogger, "SASA DHCP Server Starting up - " << ctime(&mTimeNow));
 	DiscoverPacket *pDiscoverPacket;
+	std::string lServerIPAddress = "127.0.0.1";
+	IPPoolServerCommunicator ipsc(lServerIPAddress,9999,1) ;
+	std::string lClientMacAddress;
+	std::string lPreviousIPAddress;
+	unsigned long lClientTransactionID;
+	REQUEST_TYPE lReqType;
+
 	int s = socket(AF_INET, SOCK_DGRAM, 0);
 
-	if (s < 0) {
+		if (s < 0) {
 		LOG4CXX_ERROR(pLogger,
 				"Failed to create udp socket - " << strerror(errno));
 		return 0;
@@ -111,12 +127,15 @@ int main() {
 				if (bData == 1) {
 
 					LOG4CXX_INFO(pLogger, " Value(1): DHCPDISCOVER");
+					lReqType = DHCP_DISCOVER;
+
 				} else if (bData == 2) {
 
 					LOG4CXX_INFO(pLogger, " Value(2): DHCPOFFER");
 				} else if (bData == 3) {
 
 					LOG4CXX_INFO(pLogger, " Value(3): DHCPREQUEST");
+					lReqType = DHCP_REQUEST;
 				}
 
 				else if (bData == 4) {
@@ -125,6 +144,7 @@ int main() {
 				} else if (bData == 5) {
 
 					LOG4CXX_INFO(pLogger, " Value(5): DHCPACK");
+					lReqType = DHCP_NACK;
 				} else if (bData == 6) {
 
 					LOG4CXX_INFO(pLogger, " Value(6): DHCPNACK");
@@ -149,7 +169,9 @@ int main() {
 					return 0;
 				}
 
+
 				memcpy(lClientMac, (const void*) (pOptionsPtr + 3), 6);
+				lClientMacAddress.assign(lClientMac);
 
 			} else if (bOption == 50) {
 
@@ -158,6 +180,9 @@ int main() {
 						4);
 				LOG4CXX_INFO(pLogger,
 						" Requested IP Address : "<< inet_ntoa( lClientRequestedIP.sin_addr));
+
+				 lPreviousIPAddress.assign(inet_ntoa( lClientRequestedIP.sin_addr));
+
 			}
 
 			else if (bOption == 12) {
@@ -172,6 +197,22 @@ int main() {
 
 //		LOG4CXX_DEBUG(pLogger,lOss.str());
 		}
+
+		if(lReqType == DHCP_DISCOVER)
+		{
+			ipsc.getIpLease(lClientMacAddress,lPreviousIPAddress,pDiscoverPacket->mTransactionId);
+		}
+		else if (lReqType == DHCP_REQUEST)
+		{
+			 ipsc.confirmIp(lClientMacAddress,lPreviousIPAddress);
+		}
+		else if (lReqType == DHCP_NACK)
+		{
+			ipsc.releaseIp(lClientMacAddress,lPreviousIPAddress);
+		}
+
 	}
+
+
 }
 
