@@ -53,8 +53,9 @@ int IPPoolServerCommunicator::getIpLease(std::string mac,
 	hPtr = gethostbyname(remoteHost);
 	memcpy((char *)&remoteSocketInfo.sin_addr,0,0);
 	remoteSocketInfo.sin_family = AF_INET;
-	remoteSocketInfo.sin_port = htons((u_short)68);
+	remoteSocketInfo.sin_port = htons((u_short)9191);
 	int connect(socket, (struct sockaddr *)&remoteSocketInfo, sizeof(sockaddr_in));
+
 
 
 
@@ -75,9 +76,9 @@ int IPPoolServerCommunicator::confirmIp(std::string mac, std::string ip) {
 	in_addr addr;
 	inet_aton(previouRequestPacketPS rsIp.c_str(),&addr);
 	memcpy(r.mSourceHardwareAddress,mac.c_str(),6);
-	 r.mOpField=1;
-	r.mRequestId = transactionId;
-	r.mPreviousIP = addr.s_addr;
+	r.mOpField=2;
+	r.mRequestId = 0;
+	r.mPreviousIP = ip;
 	r.mChecksum = 0;
 	r.mServerId = mServerIdentifier;
 	r.mProtocolType = 4;
@@ -95,9 +96,9 @@ int IPPoolServerCommunicator::releaseIp(std::string mac, std::string ip) {
 	in_addr addr;
 	inet_aton(previouRequestPacketPS rsIp.c_str(),&addr);
 	memcpy(r.mSourceHardwareAddress,mac.c_str(),6);
-	 r.mOpField=1;
-	r.mRequestId = transactionId;
-	r.mPreviousIP = addr.s_addr;
+	r.mOpField=3;
+	r.mRequestId = 0;
+	r.mPreviousIP = ip;
 	r.mChecksum = 0;
 	r.mServerId = mServerIdentifier;
 	r.mProtocolType = 4;
