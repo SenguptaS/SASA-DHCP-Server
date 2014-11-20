@@ -109,7 +109,8 @@ struct AcknowledgmentPacket{
 	char mServerName[64]; // 64 byte
 	char mBootFileName[128]; // 128 byte
 };
-	struct RequestPacketPS{
+	//Request Packet Pool Side
+    struct RequestPacketPS{
 
 	char mProtocolType;//1 byte
 	unsigned short mOpField;//1 byte
@@ -119,5 +120,19 @@ struct AcknowledgmentPacket{
 	unsigned int mRequestId;//4 byte
 	unsigned int mPreviousIP;//4 byte
 
+};
+
+	// Response Packet PS{
+    char mProtocolType;//1 byte
+    unsigned short mOpField;//1 byte
+    unsigned short mServerId;//2 byte
+    unsigned int mChecksum;//4 byte
+    char mSourceHardwareAddress[6];//6 byte
+    unsigned int mRequestId;//4 byte
+    unsigned int mAllocationValidTill;////4 byte
+    unsigned int mAllocatedIP;//4 byte
+    unsigned int mGatewayAddress;//4 byte
+    unsigned int mSubnetMask;//4 byte
+    unsigned int mDns;//4 byte
 };
 #pragma pack(pop);
