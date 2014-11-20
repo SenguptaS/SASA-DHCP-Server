@@ -28,8 +28,7 @@ IPPoolServerCommunicator::~IPPoolServerCommunicator() {
 	// TODO Auto
 }
 int IPPoolServerCommunicator::getIpLease(std::string mac,
-		std::string previousIp, unsigned int transactionId,
-		short int returnType) {
+		std::string previousIp, unsigned int transactionId) {
 
 	RequestPacketPS r;
 	in_addr addr;
