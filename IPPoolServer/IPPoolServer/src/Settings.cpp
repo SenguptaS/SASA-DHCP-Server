@@ -9,7 +9,8 @@
 #include <fstream>
 
 Settings::Settings(std::string lSettingsFile) {
-	this->mServerPort = 3306;
+	this->mDBPort = 3306;
+	this->mServerPort = 9191;
 	mSettingsFile = lSettingsFile;
 }
 
@@ -44,7 +45,11 @@ void Settings::ReadSettings() {
 		this->mServerPort = strtoul(lLine.c_str(), NULL, 10);
 		lFile.close();
 		return;
-	} catch (std::exception &e) {
+	} catch (std::ifstream::failure &f)
+	{
+		throw std::logic_error(f.what());
+	}
+	catch (std::exception &e) {
 		throw std::runtime_error(e.what());
 	}
 	return;

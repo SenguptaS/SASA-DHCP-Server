@@ -20,10 +20,11 @@
 #include <errno.h>
 #include "Settings.h"
 
+#include "IPPool.h"
+
 using namespace std;
 
 int main(int argc, char *argv[]) {
-
 	int lSocketFd, lNewSocketFd, lPortNo, lNoOfCharRead;
 	char lbuffer[BUFFER_SIZE];
 	struct sockaddr_in lServerAddr;
@@ -46,39 +47,74 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (strlen(argv[2]) <= 0) {
-		LOG4CXX_FATAL(pLogger,"Invalid or No configuration file provided");
+		LOG4CXX_FATAL(pLogger, "Invalid or No configuration file provided");
 		return EXIT_FAILURE;
 	}
 
 	Settings lSettings(argv[2]);
-	try
-	{
+	try {
 		lSettings.ReadSettings();
-	}
-	catch(std::exception &ex)
-	{
-		LOG4CXX_FATAL(pLogger,"Failed to read settings file - " << ex.what());
+		LOG4CXX_INFO(pLogger,
+				"Got settings - " << lSettings.mDBUser << "/" << lSettings.mDBServer << "/" << lSettings.mDBPort << " - " << lSettings.mDBSchema << " PoolServer Port: " << lSettings.mServerPort);
+	} catch (std::exception &ex) {
+		LOG4CXX_FATAL(pLogger, "Failed to read settings file - " << ex.what());
 		return EXIT_FAILURE;
 	}
 
-	LOG4CXX_INFO(pLogger, "Read settings file - " << argv[2]);
-
 	LOG4CXX_INFO(pLogger, "IPPool Starting up - " << ctime(&mTimeNow));
+
+	//Create and populate the IP Pool
+	databaseConnection lDBConn(lSettings);
+	IPPool lPool(lSettings);
+	lPool.InitializePool();
+	bool isCleanStart = false;
+
+	lDBConn.setMQuery("SELECT count(*) FROM ip_mapping");
+
+	StoreQueryResult sqr = lDBConn.getMResult();
+
+	if (sqr == NULL || sqr.num_rows() <= 0) {
+		LOG4CXX_INFO(pLogger, "Detected clean start...");
+		isCleanStart = true;
+	} else {
+		isCleanStart = false;
+	}
+
+	if(isCleanStart)
+	{
+		lDBConn.setMQuery("SELECT * FROM ip_settings");
+		lDBConn.fireQuery();
+		sqr = lDBConn.getMResult();
+
+		if(sqr == NULL|| sqr.num_rows() <=0 ){
+			LOG4CXX_ERROR(pLogger,"Failed to find IP Pool definitions. Server shutting down.");
+			return EXIT_FAILURE;
+		}
+
+		for(unsigned int x=0;x<sqr.num_rows();x++)
+		{
+			if( sqr[x]["ip_action"].compare("A") == 0 )
+			{
+				 lPool.AddIPRange((std::string)sqr[x]["ip_address"],sqr[x]["num_ips"]);
+			}
+		}
+	}
+	//===================================================
 
 	lSocketFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (lSocketFd < 0) {
-		LOG4CXX_ERROR(pLogger, "Error opening the socket");
+		LOG4CXX_ERROR(pLogger,
+				"Error creating TCP socket - " << strerror(errno));
 	}
 
 	bzero((char*) &lServerAddr, sizeof(lServerAddr));
 
 	lServerAddr.sin_family = AF_INET;
-	lServerAddr.sin_port = htons(65500);
+	lServerAddr.sin_port = htons(lSettings.mServerPort);
 	lServerAddr.sin_addr.s_addr = 0;
 
 	if (bind(lSocketFd, (struct sockaddr*) &lServerAddr, sizeof(lServerAddr))) {
-		LOG4CXX_ERROR(pLogger,
-				"Socket binding failed...try some other port no.");
+		LOG4CXX_ERROR(pLogger, "Socket binding failed - " << strerror(errno));
 	} else {
 		listen(lSocketFd, 5);
 		lNewSocketFd = accept(lSocketFd, (struct sockaddr*) &lClientAddr,

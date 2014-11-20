@@ -17,7 +17,7 @@ private:
 	log4cxx::LoggerPtr pLogger;
 
 public:
-	IPPool();
+	IPPool(Settings lSettings);
 	virtual ~IPPool();
 	int InitializePool();
 	int AddIPRange(std::string lStartingAddress,unsigned int nNumberOfIPS );
