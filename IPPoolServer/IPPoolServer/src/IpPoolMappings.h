@@ -10,7 +10,6 @@
 #include <log4cxx/logger.h>
 #include <string>
 #include "databaseConnection.h"
-#include "IPPoolServerConstants.h"
 
 using namespace std;
 
@@ -35,41 +34,5 @@ private:
 	char mFlag;
 	int long mLeaseTime;
 };
-
-IpPoolMappings::IpPoolMappings() {
-	mPLogger = Logger::getLogger(ROOT_LOGGER);
-	mId =0;
-	mFlag =0;
-	mLeaseTime =0;
-}
-
-int IpPoolMappings::insertMapping(string lMacAddress, string lIpAddress) {
-
-	String lQuery = "insert into ip_mapping ()";
-	return 0;
-}
-
-int IpPoolMappings::deleteMapping(string lMacAddress, string lIpAddress) {
-
-	return 0;
-}
-
-int IpPoolMappings::setBindingFlag() {
-
-	return 0;
-}
-
-int IpPoolMappings::updateLease() {
-	return 0;
-}
-
-int IpPoolMappings::deleteMappingAsLeaseExpires() {
-	return 0;
-}
-
-bool IpPoolMappings::checkValidity(string lMacAddress, string lIpAddress) {
-
-	return false;
-}
 
 #endif /* IPPOOLMAPPINGS_H_ */
