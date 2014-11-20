@@ -7,12 +7,17 @@
 
 #ifndef SASAPROTOCOL_H_
 #define SASAPROTOCOL_H_
+
 #include <log4cxx/logger.h>
 #include <unistd.h>
 #include "sasaPackets.h"
 #include "IpPoolMappings.h"
 #include "IPPool.h"
 #include <string>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 using namespace log4cxx;
 using namespace std;
 
@@ -62,13 +67,15 @@ int sasaProtocol::leaseOffer(){
 		IpPoolMappings lIpPoolMapping;
 		IPPool lIpPool;
 		string lIpAddr;
-
+		
 		LOG4CXX_INFO(mPLogger,"Creating a new ip-mac mapping..");
 
 		if(!(lIpPool.GetNextFreeIP(lIpAddr))){
 			// getting free ip from the pool
 			LOG4CXX_INFO(mPLogger,"Next free ip received from pool is "<< lIpAddr);
-			mResPack.mAllocatedIp = lIpAddr;
+			in_addr lINAddr;
+			inet_aton(lIpAddr.c_str(),&lINAddr);
+			mResPack.mAllocatedIp = lINAddr.s_addr;
 
 			// insert the entry of ip-mac into mapping table
 			if(lIpPoolMapping.insertMapping(mResPack.mSrcHwAddress, lIpAddr)){

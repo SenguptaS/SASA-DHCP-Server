@@ -14,7 +14,7 @@ IpPoolMappings::IpPoolMappings() {
 
 int IpPoolMappings::insertMapping(string lMacAddress, string lIpAddress) {
 
-	String lQuery = "insert into ip_mapping ()";
+//		
 	return 0;
 }
 

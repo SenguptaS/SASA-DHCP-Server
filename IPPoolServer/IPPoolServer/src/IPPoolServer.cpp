@@ -22,10 +22,11 @@
 using namespace std;
 
 int main() {
-	int lSocketFd, lNewSocketFd, lPortNo, lNoOfCharRead;
+	int lSocketFd, lNewSocketFd, lPortNo, lNoOfCharRead, lFdMax;
 	char lbuffer[BUFFER_SIZE];
 	struct sockaddr_in lServerAddr;
 	struct sockaddr_in lClientAddr;
+	fd_set lRead_fds;
 	socklen_t lClientAddressSize = sizeof(sockaddr_in);
 
 	log4cxx::PropertyConfigurator::configure("log.cfg");
@@ -48,10 +49,22 @@ int main() {
 		LOG4CXX_ERROR(pLogger, "Socket binding failed...try some other port no.");
 	}
 	else{
-		listen(lSocketFd, 5);
+		if(listen(lSocketFd, 5)== -1){
+			LOG4CXX_ERROR(pLogger, "Server not able to listen for new connections..");
+		}
+		FD_SET(lSocketFd, &lRead_fds);
+		lFdMax = lSocketFd;
+
+		if(select(lFdMax+1, &lRead_fds, NULL, NULL, NULL) == -1){
+			LOG4CXX_ERROR(pLogger, "Seems something wrong with socket select function..");
+		}
+
+		if(FD_ISSET(lSocketFd, &lRead_fds)){
+
+		}
 		lNewSocketFd = accept(lSocketFd, (struct sockaddr*) &lClientAddr, &lClientAddressSize);
 		if(lNewSocketFd <0){
-			LOG4CXX_ERROR(pLogger, "Failed to establish a connection with the client - " << strerror(errno));
+			LOG4CXX_ERROR(pLogger, "Failed to establish a connection with the client - " << strerror((int)errno));
 		}
 		else{
 			LOG4CXX_INFO(pLogger, "Successfully established a connection with the client..");
