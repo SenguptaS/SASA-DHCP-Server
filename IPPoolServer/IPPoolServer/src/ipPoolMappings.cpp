@@ -25,8 +25,8 @@ int IpPoolMappings::insertMapping(string lMacAddress, string lIpAddress) {
 	ostringstream lStrStream;
 	lStrStream.str("");
 
-	lStrStream << "INSERT INTO ip_mapping (mac_address, ip_address) VALUES ("
-			<< inet_ntoa(lInAddr) << ", " << lMacAddress << ");";
+	lStrStream << "INSERT INTO ip_mapping (mac_address, ip_address, lease_time) VALUES ('" << inet_ntoa(lInAddr)
+			<< "', '" << lMacAddress << "', "<< mSettings.mLeaseTime << ");";
 
 	mDbConnection.setMQuery(lStrStream.str());
 	int lResult = mDbConnection.fireQuery();

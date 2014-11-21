@@ -43,6 +43,19 @@ void Settings::ReadSettings() {
 
 		std::getline(lFile, lLine, ',');
 		this->mServerPort = strtoul(lLine.c_str(), NULL, 10);
+
+		std::getline(lFile, lLine, ',');
+		this->mLeaseTime = strtoul(lLine.c_str(), NULL, 10);
+
+		std::getline(lFile, lLine, ',');
+		this->mGatewayIp = lLine;
+
+		std::getline(lFile, lLine, ',');
+		this->mSubnetMask = lLine;
+
+		std::getline(lFile, lLine, ',');
+		this->mDnsIp = lLine;
+
 		lFile.close();
 		return;
 	} catch (std::ifstream::failure &f)
