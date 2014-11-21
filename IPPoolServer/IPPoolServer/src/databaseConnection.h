@@ -16,6 +16,7 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include "Settings.h"
 
 using namespace std;
 using namespace mysqlpp;
@@ -26,7 +27,7 @@ class databaseConnection{
 
 public:
 
-	databaseConnection();
+	databaseConnection(Settings &lSettings);
 	int fireQuery();
 	void setMQuery(std::string lQuery);
 	StoreQueryResult getMResult();

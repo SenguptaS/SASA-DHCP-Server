@@ -15,7 +15,7 @@ struct requestPacket{
 	char mOpField;
 	unsigned short int mServerId;
 	unsigned int mChecksum;
-	unsigned long int mSrcHwAddress;
+	char mSrcHwAddress[6];
 	unsigned int mRequestId;
 	unsigned int mRequestedIp;
 };
@@ -26,7 +26,7 @@ struct responsePacket{
 	char mOpField;
 	unsigned short int mServerId;
 	unsigned int mChecksum;
-	unsigned long int mSrcHwAddress;
+	char mSrcHwAddress[6];
 	unsigned int mRequestId;
 	unsigned int mAllocationValidTime;
 	unsigned int mAllocatedIp;
