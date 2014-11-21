@@ -9,6 +9,8 @@
 #define IPPOOLSERVERCOMMUNICATOR_H_
 #include <string>
 #include <stdio.h>
+#include <csignal>
+#include <log4cxx/logger.h>
 
 class IPPoolServerCommunicator {
 public:
@@ -17,11 +19,16 @@ public:
 	int getIpLease(std::string mac, std::string previousIp,unsigned int transactionId);
 	int confirmIp(std::string mac, std::string ip);
 	int releaseIp(std::string mac, std::string ip);
-
+	int Run();
+	int Stop();
 private:
 	std::string mServerIPAddress;
 	int mServerPort;
 	unsigned short mServerIdentifier;
+	int mClientSocket;
+	sig_atomic_t mRun;
+	static void* ResponseCommunicatorThread(void *pParams);
+	log4cxx::LoggerPtr pLogger;
 };
 
 #endif /* IPPOOLSERVERCOMMUNICATOR_H_ */

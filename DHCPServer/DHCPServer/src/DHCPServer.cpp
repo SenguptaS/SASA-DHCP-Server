@@ -17,8 +17,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include"IPPoolServerCommunicator.h"
-#include<sstream>
+#include "IPPoolServerCommunicator.h"
+#include <sstream>
+#include "DHCPServerConstants.h"
 using namespace std;
 
 enum REQUEST_TYPE
@@ -31,7 +32,7 @@ enum REQUEST_TYPE
 
 int main() {
 	log4cxx::PropertyConfigurator::configure("config/log.cfg");
-	log4cxx::LoggerPtr pLogger = log4cxx::Logger::getLogger("SASA-DHCPSERVER");
+	log4cxx::LoggerPtr pLogger = log4cxx::Logger::getLogger(ROOT_LOGGER);
 	time_t mTimeNow = time(NULL);
 	LOG4CXX_INFO(pLogger, "SASA DHCP Server Starting up - " << ctime(&mTimeNow));
 	DiscoverPacket *pDiscoverPacket;
