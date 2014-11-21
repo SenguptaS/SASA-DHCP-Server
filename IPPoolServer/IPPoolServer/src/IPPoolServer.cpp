@@ -18,11 +18,22 @@
 #include <unistd.h>
 #include <cerrno>
 #include <errno.h>
+#include <arpa/inet.h>
 #include "Settings.h"
-
+#include "ThreadPassable.h"
 #include "IPPool.h"
 
 using namespace std;
+
+void *SocketThread(void *pArguments) {
+
+	ThreadPassable* pThreadPassable =(ThreadPassable*) pArguments;
+
+
+
+	return EXIT_SUCCESS;
+}
+
 
 int main(int argc, char *argv[]) {
 	int lSocketFd, lNewSocketFd, lPortNo, lNoOfCharRead, lFdMax;
@@ -75,28 +86,31 @@ int main(int argc, char *argv[]) {
 	StoreQueryResult sqr = lDBConn.getMResult();
 
 	if (sqr == NULL || sqr.num_rows() <= 0) {
-		LOG4CXX_INFO(pLogger, "Detected clean start...");
+		LOG4CXX_INFO(pLogger, "Detected clean start");
 		isCleanStart = true;
 	} else {
 		isCleanStart = false;
 	}
 
-	if(isCleanStart)
-	{
+	if (isCleanStart) {
+
+		lDBConn.setMQuery("TRUNCATE TABLE `ip_pool`");
+		lDBConn.fireQuery();
+
 		lDBConn.setMQuery("SELECT * FROM ip_settings");
 		lDBConn.fireQuery();
 		sqr = lDBConn.getMResult();
 
-		if(sqr == NULL|| sqr.num_rows() <=0 ){
-			LOG4CXX_ERROR(pLogger,"Failed to find IP Pool definitions. Server shutting down.");
+		if (sqr == NULL || sqr.num_rows() <= 0) {
+			LOG4CXX_ERROR(pLogger,
+					"Failed to find IP Pool definitions. Server shutting down.");
 			return EXIT_FAILURE;
 		}
 
-		for(unsigned int x=0;x<sqr.num_rows();x++)
-		{
-			if( sqr[x]["ip_action"].compare("A") == 0 )
-			{
-				 lPool.AddIPRange((std::string)sqr[x]["ip_address"],sqr[x]["num_ips"]);
+		for (unsigned int x = 0; x < sqr.num_rows(); x++) {
+			if (sqr[x]["ip_action"].compare("A") == 0) {
+				lPool.AddIPRange((std::string) sqr[x]["ip_address"],
+						sqr[x]["num_ips"]);
 			}
 		}
 	}
@@ -104,7 +118,8 @@ int main(int argc, char *argv[]) {
 
 	lSocketFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (lSocketFd < 0) {
-		LOG4CXX_ERROR(pLogger,"Error creating TCP socket - " << strerror((int)errno));
+		LOG4CXX_ERROR(pLogger,
+				"Error creating TCP socket - " << strerror((int)errno));
 	}
 
 	bzero((char*) &lServerAddr, sizeof(lServerAddr));
@@ -114,34 +129,39 @@ int main(int argc, char *argv[]) {
 	lServerAddr.sin_addr.s_addr = 0;
 
 	if (bind(lSocketFd, (struct sockaddr*) &lServerAddr, sizeof(lServerAddr))) {
-		LOG4CXX_ERROR(pLogger, "Socket binding failed - " << strerror((int)errno));
+		LOG4CXX_ERROR(pLogger,
+				"Socket binding failed - " << strerror((int)errno));
 	} else {
-		if(listen(lSocketFd, 5)== -1){
-			LOG4CXX_ERROR(pLogger, "Server not able to listen for new connections..");
-		}
-		FD_SET(lSocketFd, &lRead_fds);
-		lFdMax = lSocketFd;
-
-		if(select(lFdMax+1, &lRead_fds, NULL, NULL, NULL) == -1){
-			LOG4CXX_ERROR(pLogger, "Seems something wrong with socket select function..");
+		if (listen(lSocketFd, 5) == -1) {
+			LOG4CXX_ERROR(pLogger,
+					"Failed to listen for new connections: " << strerror(errno));
+			return EXIT_FAILURE;
 		}
 
-		if(FD_ISSET(lSocketFd, &lRead_fds)){
+		while (true) {
 
-		}
-		lNewSocketFd = accept(lSocketFd, (struct sockaddr*) &lClientAddr, &lClientAddressSize);
-		if(lNewSocketFd <0){
-			LOG4CXX_ERROR(pLogger, "Failed to establish a connection with the client - " << strerror((int)errno));
-		}
-		else{
-			LOG4CXX_INFO(pLogger, "Successfully established a connection with the client..");
-			bzero(lbuffer, BUFFER_SIZE);
-			lNoOfCharRead = read(lNewSocketFd, lbuffer, BUFFER_SIZE);
-			if (lNoOfCharRead < 0) {
-				LOG4CXX_ERROR(pLogger, "Error reading from the socket");
+			lNewSocketFd = accept(lSocketFd, (struct sockaddr*) &lClientAddr,
+					&lClientAddressSize);
+
+			if (lNewSocketFd < 0) {
+				LOG4CXX_ERROR(pLogger,
+						"Failed to establish a connection with the client - " << strerror((int)errno));
 			} else {
+
+				char *pIPAddress = inet_ntoa(lClientAddr.sin_addr);
+
 				LOG4CXX_INFO(pLogger,
-						"Message read from the socket -->" << lbuffer);
+						"DHCP server connected from IP: " << pIPAddress << ":" << lClientAddr.sin_port);
+
+				pthread_attr_t lThreadAttr;
+				pthread_t lNewThread =0;
+				ThreadPassable * pThreadPassable;
+				pThreadPassable = new ThreadPassable();
+				int ThreadRetval = pthread_create(&lNewThread,&lThreadAttr,SocketThread,pThreadPassable);
+				if(ThreadRetval)
+				{
+					LOG4CXX_ERROR(pLogger,"Failed to create thread for client connection - " << strerror(ThreadRetval));
+				}
 			}
 		}
 		close(lSocketFd);

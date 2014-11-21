@@ -18,29 +18,28 @@ USE `sasaDb`;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `ip_mapping`
+-- Table structure for table `ip_settings`
 --
 
-DROP TABLE IF EXISTS `ip_mapping`;
+DROP TABLE IF EXISTS `ip_settings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `ip_mapping` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `mac_address` varchar(17) NOT NULL,
-  `ip_address` varchar(11) NOT NULL,
-  `flag` char(1) NOT NULL DEFAULT 'P',
-  `lease_time` bigint(20) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='utf8_general_ci';
+CREATE TABLE `ip_settings` (
+  `ip_address` varchar(45) NOT NULL,
+  `num_ips` int(11) NOT NULL,
+  `ip_action` varchar(1) NOT NULL,
+  PRIMARY KEY (`ip_address`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `ip_mapping`
+-- Dumping data for table `ip_settings`
 --
 
-LOCK TABLES `ip_mapping` WRITE;
-/*!40000 ALTER TABLE `ip_mapping` DISABLE KEYS */;
-/*!40000 ALTER TABLE `ip_mapping` ENABLE KEYS */;
+LOCK TABLES `ip_settings` WRITE;
+/*!40000 ALTER TABLE `ip_settings` DISABLE KEYS */;
+INSERT INTO `ip_settings` VALUES ('192.168.1.2',252,'A'),('192.168.2.2',64,'A');
+/*!40000 ALTER TABLE `ip_settings` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

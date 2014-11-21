@@ -18,29 +18,26 @@ USE `sasaDb`;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `ip_mapping`
+-- Table structure for table `ip_reserved`
 --
 
-DROP TABLE IF EXISTS `ip_mapping`;
+DROP TABLE IF EXISTS `ip_reserved`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `ip_mapping` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `mac_address` varchar(17) NOT NULL,
-  `ip_address` varchar(11) NOT NULL,
-  `flag` char(1) NOT NULL DEFAULT 'P',
-  `lease_time` bigint(20) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='utf8_general_ci';
+CREATE TABLE `ip_reserved` (
+  `client_host` varchar(64) NOT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  PRIMARY KEY (`client_host`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `ip_mapping`
+-- Dumping data for table `ip_reserved`
 --
 
-LOCK TABLES `ip_mapping` WRITE;
-/*!40000 ALTER TABLE `ip_mapping` DISABLE KEYS */;
-/*!40000 ALTER TABLE `ip_mapping` ENABLE KEYS */;
+LOCK TABLES `ip_reserved` WRITE;
+/*!40000 ALTER TABLE `ip_reserved` DISABLE KEYS */;
+/*!40000 ALTER TABLE `ip_reserved` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
