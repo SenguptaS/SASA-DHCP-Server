@@ -27,7 +27,7 @@ class databaseConnection{
 
 public:
 
-	databaseConnection(Settings &lSettings);
+	databaseConnection(const Settings &lSettings);
 	int fireQuery();
 	void setMQuery(std::string lQuery);
 	StoreQueryResult getMResult();

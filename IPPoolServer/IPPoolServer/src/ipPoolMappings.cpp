@@ -8,7 +8,9 @@
 #include "IpPoolMappings.h"
 #include "IPPoolServerConstants.h"
 
-IpPoolMappings::IpPoolMappings() {
+IpPoolMappings::IpPoolMappings(const Settings& lSettings)
+:mDbConnection(mSettings),mSettings(lSettings)
+{
 	mPLogger = Logger::getLogger(ROOT_LOGGER);
 }
 
@@ -23,7 +25,7 @@ int IpPoolMappings::deleteMapping(string lMacAddress, string lIpAddress) {
 	return 0;
 }
 
-int IpPoolMappings::setBindingFlag() {
+int IpPoolMappings::setBindingFlag(string lMacAddress, string lIpAddress) {
 
 	return 0;
 }

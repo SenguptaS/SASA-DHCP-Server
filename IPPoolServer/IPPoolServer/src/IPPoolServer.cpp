@@ -104,8 +104,7 @@ int main(int argc, char *argv[]) {
 
 	lSocketFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (lSocketFd < 0) {
-		LOG4CXX_ERROR(pLogger,
-				"Error creating TCP socket - " << strerror(errno));
+		LOG4CXX_ERROR(pLogger,"Error creating TCP socket - " << strerror((int)errno));
 	}
 
 	bzero((char*) &lServerAddr, sizeof(lServerAddr));
@@ -115,7 +114,7 @@ int main(int argc, char *argv[]) {
 	lServerAddr.sin_addr.s_addr = 0;
 
 	if (bind(lSocketFd, (struct sockaddr*) &lServerAddr, sizeof(lServerAddr))) {
-		LOG4CXX_ERROR(pLogger, "Socket binding failed - " << strerror(errno));
+		LOG4CXX_ERROR(pLogger, "Socket binding failed - " << strerror((int)errno));
 	} else {
 		if(listen(lSocketFd, 5)== -1){
 			LOG4CXX_ERROR(pLogger, "Server not able to listen for new connections..");

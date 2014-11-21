@@ -8,7 +8,7 @@
 #include "databaseConnection.h"
 
 
-databaseConnection::databaseConnection(Settings& lSettings){
+databaseConnection::databaseConnection(const Settings& lSettings){
 	mPLogger = Logger::getLogger(ROOT_LOGGER);
 	mDatabase = lSettings.mDBSchema;// "sasaDb";
 	mServer = lSettings.mDBServer;// "127.0.0.1";

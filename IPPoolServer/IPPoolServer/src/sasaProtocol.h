@@ -25,19 +25,25 @@ class sasaProtocol{
 
 public:
 	sasaProtocol();
-	int leaseOffer();
-	int ipRequest();
-	int ipLeaseAcknowlegement();
-	int ipRelease();
-	int backgroundProcessing();
+
 	void setRequestPacket(struct requestPacket lReqPack);
 	struct responsePacket getResponsePacket();
-	int copyReqToResFields();
+	int ipRequestProcessing();
+
 
 private:
 	LoggerPtr mPLogger;
 	struct requestPacket mReqPack;
 	struct responsePacket mResPack;
+
+	int copyReqToResFields();
+	int ipOffer();
+	int ipRequest();
+	int ipRelease();
+	int ipLeaseAcknowlegement();
+	int otherConfigurationReq();
+	int getOtherConfiguration();
+
 
 };
 
@@ -60,7 +66,23 @@ int sasaProtocol::copyReqToResFields(){
 	}
 }
 
-int sasaProtocol::leaseOffer(){
+int sasaProtocol::getOtherConfiguration(){
+	if(mResPack != NULL){
+		mResPack.mChecksum = 0;
+		mResPack.mAllocationValidTime = 0;
+		mResPack.mGatewayIp = 0;
+		mResPack.mSubnetMask = 0;
+		mResPack.mDnsIp = 0;
+		LOG4CXX_INFO(mPLogger,"Other configurations set..");
+	}
+	else{
+		LOG4CXX_ERROR(mPLogger,"Response packet null..other configurations cannot be set");
+		return -1;
+	}
+	return 0;
+}
+
+int sasaProtocol::ipOffer(){
 
 	if(copyReqToResFields() == 0){
 
@@ -86,12 +108,8 @@ int sasaProtocol::leaseOffer(){
 				LOG4CXX_INFO(mPLogger,"IP-MAC mapping successfully created..");
 			}
 
-			mResPack.mChecksum = 0;
-			mResPack.mAllocationValidTime = 0;
-			mResPack.mGatewayIp = 0;
-			mResPack.mSubnetMask = 0;
-			mResPack.mDnsIp = 0;
 			mResPack.mOpField = '2';
+			getOtherConfiguration();
 
 			LOG4CXX_INFO(mPLogger,"IP lease offered successfully!!");
 
@@ -107,21 +125,91 @@ int sasaProtocol::leaseOffer(){
 
 int sasaProtocol::ipRequest(){
 
+	if(copyReqToResFields() == 0){
+
+			IpPoolMappings lIpPoolMapping;
+			IPPool lIpPool;
+			string lIpAddr;
+			in_addr lInAddr;
+			lInAddr.s_addr = mReqPack.mRequestedIp;
+
+			LOG4CXX_INFO(mPLogger,"Checking ip-mac mapping in the pool for requested Ip "<< mReqPack.mRequestedIp <<" and MAC "<< mReqPack.mSrcHwAddress);
+
+			if(lIpPoolMapping.checkValidity(mReqPack.mSrcHwAddress,inet_ntoa(lInAddr))){
+				LOG4CXX_INFO(mPLogger,"Mapping not found thus offering a new IP from the pool");
+				ipOffer();
+			}
+			else{
+				LOG4CXX_INFO(mPLogger,"Mapping found..");
+				mResPack.mAllocatedIp = mReqPack.mRequestedIp;
+				mResPack.mOpField = '4';
+				getOtherConfiguration();
+				ipLeaseAcknowlegement();
+				LOG4CXX_INFO(mPLogger,"Acknowledging Ip Assignment "<< inet_ntoa(lInAddr)<<" to client with MAC "<< mReqPack.mSrcHwAddress);
+			}
+		}
+
+		return 0;
+}
+
+int sasaProtocol::ipRelease(){
+	IpPoolMappings lIpPoolMapping;
+	IPPool lIpPool;
+
+	if(mReqPack != NULL){
+		in_addr lInAddr;
+		lInAddr.s_addr = mReqPack.mRequestedIp;
+		if(lIpPoolMapping.deleteMapping(mReqPack.mSrcHwAddress, inet_ntoa(lInAddr))){
+			LOG4CXX_ERROR(mPLogger,"IP-MAC mapping could not be deleted");
+			return -1;
+		}
+		else{
+			LOG4CXX_INFO(mPLogger,"IP-MAC mapping deleted from the mapping pool...not releasing the ip address "<< inet_ntoa(lInAddr));
+			if(lIpPool.ReleaseIP(inet_ntoa(lInAddr))){
+				LOG4CXX_ERROR(mPLogger,"Could not release IP address "<< inet_ntoa(lInAddr));
+				return -1;
+			}
+			else{
+				LOG4CXX_INFO(mPLogger,"IP address "<< inet_ntoa(lInAddr)<< "released successfully..");
+			}
+		}
+	}
+	mResPack = NULL;
 	return 0;
 }
 
 int sasaProtocol::ipLeaseAcknowlegement(){
+	IpPoolMappings lIpPoolMapping;
 
+	if(mReqPack != NULL){
+		if((mReqPack.mSrcHwAddress != NULL) && (mReqPack.mRequestedIp != 0)){
+			in_addr lInAddr;
+			lInAddr.s_addr = mReqPack.mRequestedIp;
+			if(lIpPoolMapping.setBindingFlag(mReqPack.mSrcHwAddress, inet_ntoa(lInAddr))){
+				LOG4CXX_ERROR(mPLogger,"Binding failed corresponding to IP "<< inet_ntoa(lInAddr)<<" and MAC "<< mReqPack.mSrcHwAddress);
+				return -1;
+			}
+			else{
+				LOG4CXX_INFO(mPLogger,"Binding successful corresponding to IP "<< inet_ntoa(lInAddr)<<" and MAC "<< mReqPack.mSrcHwAddress);
+
+			}
+		}
+	}
 	return 0;
 }
 
-int sasaProtocol::ipRelease(){
-
-	return 0;
-}
-
-int sasaProtocol::backgroundProcessing(){
-
+int sasaProtocol::otherConfigurationReq(){
+	if(copyReqToResFields() == 0){
+		in_addr lInAddr;
+		lInAddr.s_addr = mReqPack.mRequestedIp;
+		mResPack.mOpField = '5';
+		mResPack.mRequestId = mReqPack.mRequestedIp;
+		getOtherConfiguration();
+		LOG4CXX_INFO(mPLogger,"Configurations gathered for IP "<< inet_ntoa(lInAddr));
+	}
+	else{
+		return -1;
+	}
 	return 0;
 }
 
@@ -133,6 +221,40 @@ struct responsePacket sasaProtocol::getResponsePacket(){
 	return this->mResPack;
 }
 
+int sasaProtocol::ipRequestProcessing(){
+	char lOpcode;
+
+	if(mReqPack != NULL){
+		lOpcode = mReqPack.mOpField;
+
+		switch(lOpcode){
+		case '1':
+			// Request for new / old Ip
+			if(mReqPack.mRequestedIp == 0)
+				ipOffer();
+			else
+				ipRequest();
+			break;
+		case '2':
+			// opcode used for new IP Lease offer
+			break;
+		case '3':
+			// release ip request received
+			ipRelease();
+			break;
+		case '4':
+			// opcode used for acknowledgment
+			break;
+		case '5':
+			otherConfigurationReq();
+			break;
+		}
+	}
+	else{
+		LOG4CXX_ERROR(mPLogger,"Request packet not obtained..");
+	}
+	return 0;
+}
 
 
 
