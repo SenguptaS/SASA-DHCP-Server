@@ -16,7 +16,7 @@ using namespace std;
 class IpPoolMappings {
 public:
 
-	IpPoolMappings();
+	IpPoolMappings(const Settings &lSettings);
 	int insertMapping(string lMacAddress, string lIpAddress);
 	int deleteMapping(string lMacAddress, string lIpAddress);
 	int setBindingFlag();
@@ -27,12 +27,13 @@ public:
 private:
 
 	LoggerPtr mPLogger;
-	databaseConnection mDbConnection;
 	int long mId;
 	string mMacAddress;
 	string mIpAddress;
 	char mFlag;
 	int long mLeaseTime;
+	const Settings& mSettings;
+	databaseConnection mDbConnection;
 };
 
 #endif /* IPPOOLMAPPINGS_H_ */

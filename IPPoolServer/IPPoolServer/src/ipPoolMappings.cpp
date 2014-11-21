@@ -8,7 +8,9 @@
 #include "IpPoolMappings.h"
 #include "IPPoolServerConstants.h"
 
-IpPoolMappings::IpPoolMappings() {
+IpPoolMappings::IpPoolMappings(const Settings& lSettings)
+:mDbConnection(mSettings),mSettings(lSettings)
+{
 	mPLogger = Logger::getLogger(ROOT_LOGGER);
 }
 
