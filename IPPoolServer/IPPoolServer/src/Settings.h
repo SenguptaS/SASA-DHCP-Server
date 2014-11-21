@@ -23,6 +23,10 @@ public:
 	std::string mDBSchema;
 	unsigned int mDBPort;
 	unsigned int mServerPort;
+	unsigned int mLeaseTime;
+	std::string mGatewayIp;
+	std::string mSubnetMask;
+	std::string mDnsIp;
 private:
 
 };
