@@ -7,7 +7,8 @@
 
 #include "ThreadPassable.h"
 
-ThreadPassable::ThreadPassable() {
+ThreadPassable::ThreadPassable(const Settings &lSettings)
+	:mSettings(lSettings){
 	// TODO Auto-generated constructor stub
 
 }
