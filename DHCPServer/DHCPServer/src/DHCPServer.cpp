@@ -31,7 +31,7 @@ enum REQUEST_TYPE
 };
 
 
-int main(int argc,char* argv[][]) {
+int main(int argc,char* argv[]) {
 
 	log4cxx::PropertyConfigurator::configure("config/log.cfg");
 	log4cxx::LoggerPtr pLogger = log4cxx::Logger::getLogger(ROOT_LOGGER);
@@ -54,7 +54,7 @@ int main(int argc,char* argv[][]) {
 
 	for(int x=1;x<argc+1;x++)
 	{
-		if( )
+//		if( )
 	}
 
 	int s = socket(AF_INET, SOCK_DGRAM, 0);

@@ -30,7 +30,7 @@ int PoolResponse::ProcessIPOffer() //< SASA POOL PACKET >)
 	struct ifaddrs *pIFList,*pFa;
 	int lNoIPSReturned = getifaddrs(&pIFList);
 	int n,family,a;
-	char PHost[];
+
 	if (getifaddrs(&pIFList) == -1)
 	{
 		LOG4CXX_ERROR(this->pLogger," Error - Server Address can't be find ");
@@ -48,7 +48,7 @@ int PoolResponse::ProcessIPOffer() //< SASA POOL PACKET >)
 		if (family == AF_INET){
 			sockaddr_in* pSockAddrInAddr = (sockaddr_in*) pFa->ifa_addr;
 
-			pSockAddrInAddr->sin_addr.s_addr //This is your ip
+//			pSockAddrInAddr->sin_addr.s_addr; //This is your ip
 			break;
 		}
 

@@ -7,6 +7,7 @@
 
 #ifndef DHCPSERVERSETTINGS_H_
 #define DHCPSERVERSETTINGS_H_
+#include <string>
 
 class DHCPServerSettings {
 public:
