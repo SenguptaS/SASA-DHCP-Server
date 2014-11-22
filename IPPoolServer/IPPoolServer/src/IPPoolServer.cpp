@@ -27,10 +27,25 @@ using namespace std;
 
 void *SocketThread(void *pArguments) {
 
+	log4cxx::LoggerPtr pLogger = log4cxx::Logger::getLogger("ServiceThread");
+
 	ThreadPassable* pThreadPassable =(ThreadPassable*) pArguments;
+	unsigned char lPacketBuffer[1024];
+
+	int lRecdBytes =0;
+
+	while ( lRecdBytes = read(pThreadPassable->mClientSocket,lPacketBuffer,sizeof(requestPacket)))
+	{
+		requestPacket *pReqPacket = (requestPacket) lPacketBuffer;
+
+		switch( pReqPacket->mOpField )
+		{
+		}
+	}
 
 
 
+	delete pThreadPassable;
 	return EXIT_SUCCESS;
 }
 
