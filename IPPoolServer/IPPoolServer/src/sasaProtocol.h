@@ -24,7 +24,7 @@ using namespace std;
 class sasaProtocol{
 
 public:
-	sasaProtocol();
+	sasaProtocol(const Settings& lSettings);
 
 	void setRequestPacket(struct requestPacket lReqPack);
 	struct responsePacket getResponsePacket();
@@ -35,6 +35,7 @@ private:
 	LoggerPtr mPLogger;
 	struct requestPacket mReqPack;
 	struct responsePacket mResPack;
+	const Settings& mSettings;
 
 	int copyReqToResFields();
 	int ipOffer();
@@ -47,7 +48,8 @@ private:
 
 };
 
-sasaProtocol::sasaProtocol(){
+sasaProtocol::sasaProtocol(const Settings& lSettings)
+	: mSettings(lSettings){
 	mPLogger = Logger::getLogger(ROOT_LOGGER);
 }
 
@@ -68,11 +70,20 @@ int sasaProtocol::copyReqToResFields(){
 
 int sasaProtocol::getOtherConfiguration(){
 	if(mResPack != NULL){
+		in_addr lInAddr;
 		mResPack.mChecksum = 0;
-		mResPack.mAllocationValidTime = 0;
-		mResPack.mGatewayIp = 0;
-		mResPack.mSubnetMask = 0;
-		mResPack.mDnsIp = 0;
+
+		mResPack.mAllocationValidTime = mSettings.mLeaseTime;
+
+		inet_aton(mSettings.mGatewayIp.c_str(), &lInAddr);
+		mResPack.mGatewayIp = lInAddr.s_addr;
+
+		inet_aton(mSettings.mSubnetMask.c_str(), &lInAddr);
+		mResPack.mSubnetMask = lInAddr.s_addr;
+
+		inet_aton(mSettings.mDnsIp.c_str(), &lInAddr);
+		mResPack.mDnsIp = lInAddr.s_addr;
+
 		LOG4CXX_INFO(mPLogger,"Other configurations set..");
 	}
 	else{
@@ -135,7 +146,7 @@ int sasaProtocol::ipRequest(){
 
 			LOG4CXX_INFO(mPLogger,"Checking ip-mac mapping in the pool for requested Ip "<< mReqPack.mRequestedIp <<" and MAC "<< mReqPack.mSrcHwAddress);
 
-			if(lIpPoolMapping.checkValidity(mReqPack.mSrcHwAddress,inet_ntoa(lInAddr))){
+			if(!(lIpPoolMapping.checkValidity(mReqPack.mSrcHwAddress,inet_ntoa(lInAddr)))){
 				LOG4CXX_INFO(mPLogger,"Mapping not found thus offering a new IP from the pool");
 				ipOffer();
 			}
