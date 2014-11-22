@@ -22,6 +22,7 @@
 #include "Settings.h"
 #include "ThreadPassable.h"
 #include "IPPool.h"
+#include "sasaPackets.h"
 
 using namespace std;
 
@@ -36,7 +37,7 @@ void *SocketThread(void *pArguments) {
 
 	while ( lRecdBytes = read(pThreadPassable->mClientSocket,lPacketBuffer,sizeof(requestPacket)))
 	{
-		requestPacket *pReqPacket = (requestPacket) lPacketBuffer;
+		requestPacket *pReqPacket = (requestPacket*) lPacketBuffer;
 
 		switch( pReqPacket->mOpField )
 		{
