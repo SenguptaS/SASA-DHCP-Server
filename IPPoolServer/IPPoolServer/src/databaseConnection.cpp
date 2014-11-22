@@ -7,13 +7,14 @@
 
 #include "databaseConnection.h"
 
-databaseConnection::databaseConnection(){
+
+databaseConnection::databaseConnection(const Settings& lSettings){
 	mPLogger = Logger::getLogger(ROOT_LOGGER);
-	mDatabase = "sasaDb";
-	mServer = "127.0.0.1";
-	mUsrername = "root";
-	mPassword = "root123";
-	port = 0;
+	mDatabase = lSettings.mDBSchema;// "sasaDb";
+	mServer = lSettings.mDBServer;// "127.0.0.1";
+	mUsrername = lSettings.mDBUser;// "root";
+	mPassword = lSettings.mDBPassword;// "root123";
+	port = lSettings.mDBPort;
 }
 
 int databaseConnection::createConnection(){
@@ -39,15 +40,20 @@ int databaseConnection::fireQuery(){
 		else{
 			Query lQuery = mConn.query(mQuery.c_str());
 			LOG4CXX_INFO(mPLogger,"Query to the database set as "<< mQuery);
-			if(this->mResult == lQuery.store()){
-				LOG4CXX_INFO(mPLogger, "Data successfully retrieved from the database..");
+			try
+			{
+			this->mResult = lQuery.store();
+
+			if(this->mResult != NULL){
+//				LOG4CXX_INFO(mPLogger, "Data successfully retrieved from the database..");
 				return 0;
 			}
-			else{
-				LOG4CXX_ERROR(mPLogger, "Something seems wrong with the query or database...unsuccessful query execution..");
+			return 0;
+			}catch(std::exception &ex)
+			{
+				LOG4CXX_ERROR(mPLogger, "DB Error - " << ex.what());
 				return -1;
 			}
-
 		}
 	}
 	else{

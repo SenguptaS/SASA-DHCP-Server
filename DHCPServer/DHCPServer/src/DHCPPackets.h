@@ -1,4 +1,3 @@
-
 //The DHCP packet is as follows
 /*
    0                   1                   2                   3
@@ -37,7 +36,7 @@
 */
 #pragma pack(push,1)
 //Discover Packet
-struct DiscoverPacket{
+struct DiscoverPacket {
 	char mOpField;	//1 byte
 	char mHeaderType; // 1 byte
 	char mHeaderLength; // 1 byte
@@ -93,13 +92,13 @@ struct ResponsePacket{
 };
 
 //Acknowledgment Packet
-struct AcknowledgmentPacket{
+struct AcknowledgmentPacket {
 	char mOpField;	//1 byte
 	char mHeaderType; // 1 byte
 	char mHeaderLength; // 1 byte
 	char mHops; // 1 byte
 	unsigned int mTransactionId; // 4 byte
-	unsigned short mSeconds;// 2 byte
+	unsigned short mSeconds; // 2 byte
 	unsigned short mFlags; // 2 byte
 	unsigned int mClientAddress; // 4 byte
 	unsigned int mYourAddress; // 4 byte
@@ -109,15 +108,17 @@ struct AcknowledgmentPacket{
 	char mServerName[64]; // 64 byte
 	char mBootFileName[128]; // 128 byte
 };
-	struct RequestPacketPS{
 
-	char mProtocolType;//1 byte
-	unsigned short mOpField;//1 byte
-	unsigned short mServerId;//2 byte
-	unsigned int mChecksum;//4 byte
-	char mSourceHardwareAddress[6];//6 byte
-	unsigned int mRequestId;//4 byte
-	unsigned int mPreviousIP;//4 byte
+struct RequestPacketPS{
 
+	char mProtocolType; //1 byte
+	unsigned short mOpField; //1 byte
+	unsigned short mServerId; //2 byte
+	unsigned int mChecksum; //4 byte
+	char mSourceHardwareAddress[6]; //6 byte
+	unsigned int mRequestId; //4 byte
+	unsigned int mPreviousIP; //4 byte
 };
+
+
 #pragma pack(pop)

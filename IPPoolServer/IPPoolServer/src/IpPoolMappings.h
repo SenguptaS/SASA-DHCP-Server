@@ -10,17 +10,16 @@
 #include <log4cxx/logger.h>
 #include <string>
 #include "databaseConnection.h"
-#include "IPPoolServerConstants.h"
 
 using namespace std;
 
 class IpPoolMappings {
 public:
 
-	IpPoolMappings();
+	IpPoolMappings(const Settings &lSettings);
 	int insertMapping(string lMacAddress, string lIpAddress);
 	int deleteMapping(string lMacAddress, string lIpAddress);
-	int setBindingFlag();
+	int setBindingFlag(string lMacAddress, string lIpAddress);
 	int updateLease();
 	int deleteMappingAsLeaseExpires();
 	bool checkValidity(string lMacAddress, string lIpAddress);
@@ -28,48 +27,13 @@ public:
 private:
 
 	LoggerPtr mPLogger;
-	databaseConnection mDbConnection;
 	int long mId;
 	string mMacAddress;
 	string mIpAddress;
 	char mFlag;
 	int long mLeaseTime;
+	const Settings& mSettings;
+	databaseConnection mDbConnection;
 };
-
-IpPoolMappings::IpPoolMappings() {
-	mPLogger = Logger::getLogger(ROOT_LOGGER);
-	mId =0;
-	mFlag =0;
-	mLeaseTime =0;
-}
-
-int IpPoolMappings::insertMapping(string lMacAddress, string lIpAddress) {
-
-	String lQuery = "insert into ip_mapping ()";
-	return 0;
-}
-
-int IpPoolMappings::deleteMapping(string lMacAddress, string lIpAddress) {
-
-	return 0;
-}
-
-int IpPoolMappings::setBindingFlag() {
-
-	return 0;
-}
-
-int IpPoolMappings::updateLease() {
-	return 0;
-}
-
-int IpPoolMappings::deleteMappingAsLeaseExpires() {
-	return 0;
-}
-
-bool IpPoolMappings::checkValidity(string lMacAddress, string lIpAddress) {
-
-	return false;
-}
 
 #endif /* IPPOOLMAPPINGS_H_ */

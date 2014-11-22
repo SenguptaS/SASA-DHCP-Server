@@ -12,7 +12,8 @@
 #include <mysql++/connection.h>
 #include "IPPoolServerConstants.h"
 
-IPPool::IPPool() {
+IPPool::IPPool(Settings lSettings) :
+		mDatabaseConnection(lSettings) {
 
 }
 
@@ -34,11 +35,17 @@ int IPPool::AddIPRange(std::string lStartingAddress,
 	std::ostringstream lOss;
 	unsigned int lNoIPAdded = 0;
 
+	lAddr.s_addr = lAddress;
+
 	while (nNumberOfIPS > 0) {
-		lAddr.s_addr = lAddress;
 		lOss.str("");
 		lOss << "INSERT INTO `ip_pool` (`ip_address`,`flag`) VALUES('"
 				<< inet_ntoa(lAddr) << "','N');";
+
+		lAddress = htonl( lAddr.s_addr );
+		lAddress++;
+		lAddr.s_addr = ntohl(lAddress);
+
 		mDatabaseConnection.setMQuery(lOss.str());
 		int lQueryReturnValue = mDatabaseConnection.fireQuery();
 		if (lQueryReturnValue < 0) {
@@ -118,16 +125,14 @@ int IPPool::GetNextFreeIP(std::string& lNextFreeIP) {
 	lOss << "SELECT * FROM `ip_pool` WHERE `flag`='N' LIMIT 1";
 	mDatabaseConnection.setMQuery(lOss.str());
 
-	if( mDatabaseConnection.fireQuery() < 0 )
-	{
-		LOG4CXX_ERROR(pLogger,"Failed to get free ip from pool");
+	if (mDatabaseConnection.fireQuery() < 0) {
+		LOG4CXX_ERROR(pLogger, "Failed to get free ip from pool");
 		return -1;
 	}
 
 	StoreQueryResult lResult = mDatabaseConnection.getMResult();
-	if(lResult == NULL || lResult.num_rows() <=0)
-	{
-		LOG4CXX_ERROR(pLogger,"No free ip address available in pool");
+	if (lResult == NULL || lResult.num_rows() <= 0) {
+		LOG4CXX_ERROR(pLogger, "No free ip address available in pool");
 		return -1;
 	}
 
@@ -135,9 +140,8 @@ int IPPool::GetNextFreeIP(std::string& lNextFreeIP) {
 	lOss << (string) lResult[0]["ip_address"];
 	lNextFreeIP = lOss.str();
 
-	if( this->SetIPAddressState(lNextFreeIP,true) < 0)
-	{
-		lNextFreeIP ="";
+	if (this->SetIPAddressState(lNextFreeIP, true) < 0) {
+		lNextFreeIP = "";
 		return -1;
 	}
 	return 0;
@@ -147,19 +151,18 @@ int IPPool::ReleaseIP(std::string lIPAddress) {
 	return this->SetIPAddressState(lIPAddress, false);
 }
 
-
-int IPPool::SetIPAddressState(std::string lIPAddress, bool lInUse)
-{
+int IPPool::SetIPAddressState(std::string lIPAddress, bool lInUse) {
 	std::ostringstream lOss;
-	lOss << "UPDATE `ip_pool` SET `flag` = '" << (lInUse?"A":"N") << "'";
+	lOss << "UPDATE `ip_pool` SET `flag` = '" << (lInUse ? "A" : "N") << "'";
 
 	mDatabaseConnection.setMQuery(lOss.str());
 
-	if( mDatabaseConnection.fireQuery() < 0 )
-	{
-		LOG4CXX_ERROR(pLogger,"Failed to update status of IP: " << lIPAddress << " to " << (lInUse?"A":"N") );
+	if (mDatabaseConnection.fireQuery() < 0) {
+		LOG4CXX_ERROR(pLogger,
+				"Failed to update status of IP: " << lIPAddress << " to " << (lInUse?"A":"N"));
 		return -1;
 	}
-	LOG4CXX_INFO(pLogger,"Set status of IP Address: " << lIPAddress << " to " << (lInUse?"A":"N"));
+	LOG4CXX_INFO(pLogger,
+			"Set status of IP Address: " << lIPAddress << " to " << (lInUse?"A":"N"));
 	return 0;
 }
