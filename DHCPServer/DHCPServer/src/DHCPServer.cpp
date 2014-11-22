@@ -30,7 +30,9 @@ enum REQUEST_TYPE
 	DHCP_NACK = 4
 };
 
-int main() {
+
+int main(int argc,char* argv[]) {
+
 	log4cxx::PropertyConfigurator::configure("config/log.cfg");
 	log4cxx::LoggerPtr pLogger = log4cxx::Logger::getLogger(ROOT_LOGGER);
 	time_t mTimeNow = time(NULL);
@@ -42,6 +44,18 @@ int main() {
 	std::string lPreviousIPAddress;
 	unsigned long lClientTransactionID;
 	REQUEST_TYPE lReqType;
+
+
+	if(argc < 7)
+	{
+		LOG4CXX_FATAL(pLogger,"Usage -n <server_name> -s <pool_server_ip> -p <pool_server_port>");
+		return 0;
+	}
+
+	for(int x=1;x<argc+1;x++)
+	{
+//		if( )
+	}
 
 	int s = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -64,7 +78,7 @@ int main() {
 
 	// Bind Successful from Port 67
 
-//	if (listen(s, 0)) {
+ //	if (listen(s, 0)) {
 //		LOG4CXX_FATAL(pLogger, "FAILED TO LISTEN ON PORT - " << strerror(errno));
 //		return 0; // Port Listens for incoming Packets
 //	}
@@ -214,6 +228,20 @@ int main() {
 
 	}
 
+// Send data back to client
+
+	long int SendData =  sendto(s,(const void*) buffer,sizeof(ResponsePacket),0,(struct sockaddr*) &SocketAddr, sizeof(sockaddr_in));
+	{
+		if (SendData < 0){
+
+				LOG4CXX_FATAL(pLogger, " Error - " << strerror(errno));
+				return 0;
+		}
+		else {
+			LOG4CXX_INFO(pLogger, " Data Successfully send- " << strerror(errno));
+							return 0;
+		}
+	}
 
 }
 
