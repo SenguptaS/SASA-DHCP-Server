@@ -9,27 +9,66 @@
 #include "sasaPackets.h"
 #include<string.h>
 #include "DHCPPackets.h"
+#include<sys/types.h>
+#include<ifaddrs.h>
+#include <log4cxx/logger.h>
+#include<sys/socket.h>
+#include<netdb.h>
 
 PoolResponse::PoolResponse() {
-	// TODO Auto-generated constructor stub
-
+	pLogger = log4cxx::Logger::getLogger("PoolResponse");
 }
 
 int PoolResponse::ProcessIPOffer() //< SASA POOL PACKET >)
 {
 	ResponsePacket p;
+
+	memset(&p,0,sizeof(ResponsePacket));
+
 	struct SASA_responsePacket q;
+
+	struct ifaddrs *pIFList,*pFa;
+	int lNoIPSReturned = getifaddrs(&pIFList);
+	int n,family,a;
+	char PHost[];
+	if (getifaddrs(&pIFList) == -1)
+	{
+		LOG4CXX_ERROR(this->pLogger," Error - Server Address can't be find ");
+	}
+	// G through the linked list
+
+	for (pFa = pIFList,n=0;pFa!= NULL;pFa->ifa_next,n++)
+	{
+		if(pFa->ifa_addr == NULL)
+			continue;
+		family = pFa->ifa_addr->sa_family;
+
+		// display the address
+
+		if (family == AF_INET){
+			sockaddr_in* pSockAddrInAddr = (sockaddr_in*) pFa->ifa_addr;
+
+			pSockAddrInAddr->sin_addr.s_addr //This is your ip
+			break;
+		}
+
+	}
+
 	p.mOpField = q.mOpField;
 	p.mClientHardwareAddress = q.mSrcHwAddress;
 	p.mTransactionId = q.mRequestId;
 	p.mClientHardwareAddress = q.mSrcHwAddress;
 	p.mGatewayAddress = q.mGatewayIp;
 	p.mYourAddress = q.mAllocatedIp;
+	p.mHeaderLength = 0x06;
+	p.mHeaderType = 0x01;
+	p.mServerAddress = 0;
+	unsigned int lTotalBytes =0;
 
 	char buffer[1024];
-	memcpy( (void*) buffer, (const void*) &q , 48);
+	memcpy( (void*) buffer, (const void*) &p , sizeof(ResponsePacket));
 
-	char* pOptionsPtr = &buffer[sizeof(SASA_responsePacket)];
+	char* pOptionsPtr = &buffer[sizeof(ResponsePacket)];
 
 	OPHeader *pOPHeader = (OPHeader*) pOptionsPtr;
 	pOPHeader->OPCode = 51;

@@ -82,7 +82,7 @@ struct ResponsePacket{
 	unsigned int mTransactionId; // 4 byte
 	unsigned short mSeconds; // 2 byte
 	unsigned short mFlags; // 2 byte
-	unsigned int mClientAddress; // 4 byte
+    unsigned int mClientAddress; // 4 byte
 	unsigned int mYourAddress; // 4 byte
 	unsigned int mServerAddress; // 4 byte
 	unsigned int mGatewayAddress; // 4 byte
@@ -120,4 +120,4 @@ struct AcknowledgmentPacket{
 	unsigned int mPreviousIP;//4 byte
 
 };
-#pragma pack(pop);
+#pragma pack(pop)
