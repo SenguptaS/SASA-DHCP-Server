@@ -22,16 +22,12 @@
 #include "DHCPServerConstants.h"
 using namespace std;
 
-enum REQUEST_TYPE
-{
-	DHCP_DISCOVER =1,
-	DHCP_OFFER =2,
-	DHCP_REQUEST = 3,
-	DHCP_NACK = 4
+enum REQUEST_TYPE {
+	DHCP_DISCOVER = 1, DHCP_OFFER = 2, DHCP_REQUEST = 3, DHCP_NACK = 4
 };
+std::string lServerName;
 
-
-int main(int argc,char* argv[]) {
+int main(int argc, char* argv[]) {
 
 	log4cxx::PropertyConfigurator::configure("config/log.cfg");
 	log4cxx::LoggerPtr pLogger = log4cxx::Logger::getLogger(ROOT_LOGGER);
@@ -39,27 +35,32 @@ int main(int argc,char* argv[]) {
 	LOG4CXX_INFO(pLogger, "SASA DHCP Server Starting up - " << ctime(&mTimeNow));
 	DiscoverPacket *pDiscoverPacket;
 	std::string lServerIPAddress = "127.0.0.1";
-	IPPoolServerCommunicator ipsc(lServerIPAddress,9999,1) ;
+	IPPoolServerCommunicator ipsc(lServerIPAddress, 9999, 1);
 	std::string lClientMacAddress;
 	std::string lPreviousIPAddress;
 	unsigned long lClientTransactionID;
 	REQUEST_TYPE lReqType;
 
-
-	if(argc < 7)
-	{
-		LOG4CXX_FATAL(pLogger,"Usage -n <server_name> -s <pool_server_ip> -p <pool_server_port>");
+	if (argc < 7) {
+		LOG4CXX_FATAL(pLogger,
+				"Usage -n <server_name> -s <pool_server_ip> -p <pool_server_port>");
 		return 0;
 	}
 
-	for(int x=1;x<argc+1;x++)
-	{
-//		if( )
+	for (int x = 1; x < argc + 1; x++) {
+
+		if (strcmp(argv[x], "-n") == 0) {
+			lServerName.assign(argv[x+1]);
+		}
+		//..
+		//..
+		//..
+
 	}
 
 	int s = socket(AF_INET, SOCK_DGRAM, 0);
 
-		if (s < 0) {
+	if (s < 0) {
 		LOG4CXX_ERROR(pLogger,
 				"Failed to create udp socket - " << strerror(errno));
 		return 0;
@@ -78,7 +79,7 @@ int main(int argc,char* argv[]) {
 
 	// Bind Successful from Port 67
 
- //	if (listen(s, 0)) {
+	//	if (listen(s, 0)) {
 //		LOG4CXX_FATAL(pLogger, "FAILED TO LISTEN ON PORT - " << strerror(errno));
 //		return 0; // Port Listens for incoming Packets
 //	}
@@ -184,7 +185,6 @@ int main(int argc,char* argv[]) {
 					return 0;
 				}
 
-
 				memcpy(lClientMac, (const void*) (pOptionsPtr + 3), 6);
 				lClientMacAddress.assign(lClientMac);
 
@@ -196,7 +196,8 @@ int main(int argc,char* argv[]) {
 				LOG4CXX_INFO(pLogger,
 						" Requested IP Address : "<< inet_ntoa( lClientRequestedIP.sin_addr));
 
-				 lPreviousIPAddress.assign(inet_ntoa( lClientRequestedIP.sin_addr));
+				lPreviousIPAddress.assign(
+						inet_ntoa(lClientRequestedIP.sin_addr));
 
 			}
 
@@ -213,33 +214,30 @@ int main(int argc,char* argv[]) {
 //		LOG4CXX_DEBUG(pLogger,lOss.str());
 		}
 
-		if(lReqType == DHCP_DISCOVER)
-		{
-			ipsc.getIpLease(lClientMacAddress,lPreviousIPAddress,pDiscoverPacket->mTransactionId);
-		}
-		else if (lReqType == DHCP_REQUEST)
-		{
-			 ipsc.confirmIp(lClientMacAddress,lPreviousIPAddress);
-		}
-		else if (lReqType == DHCP_NACK)
-		{
-			ipsc.releaseIp(lClientMacAddress,lPreviousIPAddress);
+		if (lReqType == DHCP_DISCOVER) {
+			ipsc.getIpLease(lClientMacAddress, lPreviousIPAddress,
+					pDiscoverPacket->mTransactionId);
+		} else if (lReqType == DHCP_REQUEST) {
+			ipsc.confirmIp(lClientMacAddress, lPreviousIPAddress);
+		} else if (lReqType == DHCP_NACK) {
+			ipsc.releaseIp(lClientMacAddress, lPreviousIPAddress);
 		}
 
 	}
 
 // Send data back to client
 
-	long int SendData =  sendto(s,(const void*) buffer,sizeof(ResponsePacket),0,(struct sockaddr*) &SocketAddr, sizeof(sockaddr_in));
+	long int SendData = sendto(s, (const void*) buffer, sizeof(ResponsePacket),
+			0, (struct sockaddr*) &SocketAddr, sizeof(sockaddr_in));
 	{
-		if (SendData < 0){
+		if (SendData < 0) {
 
-				LOG4CXX_FATAL(pLogger, " Error - " << strerror(errno));
-				return 0;
-		}
-		else {
-			LOG4CXX_INFO(pLogger, " Data Successfully send- " << strerror(errno));
-							return 0;
+			LOG4CXX_FATAL(pLogger, " Error - " << strerror(errno));
+			return 0;
+		} else {
+			LOG4CXX_INFO(pLogger,
+					" Data Successfully send- " << strerror(errno));
+			return 0;
 		}
 	}
 
