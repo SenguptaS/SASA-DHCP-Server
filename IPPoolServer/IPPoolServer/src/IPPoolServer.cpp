@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		if (listen(lSocketFd, 5) == -1) {
 			LOG4CXX_ERROR(pLogger,
-					"Failed to listen for new connections: " << strerror(errno));
+					"Failed to listen for new connections: " << strerror((int)errno));
 			return EXIT_FAILURE;
 		}
 
