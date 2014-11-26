@@ -26,6 +26,8 @@ enum REQUEST_TYPE {
 	DHCP_DISCOVER = 1, DHCP_OFFER = 2, DHCP_REQUEST = 3, DHCP_NACK = 4
 };
 std::string lServerName;
+std::string lIpServer;
+std::string lServerPort;
 
 int main(int argc, char* argv[]) {
 
@@ -47,15 +49,21 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
-	for (int x = 1; x < argc + 1; x++) {
+	for (int x = 1; x < argc; x++) {
 
 		if (strcmp(argv[x], "-n") == 0) {
 			lServerName.assign(argv[x+1]);
 		}
-		//..
-		//..
-		//..
-
+		else if(strcmp(argv[x], "-s") == 0){
+			lIpServer.assign(argv[x+1]);
+		}
+		else if(strcmp(argv[x], "-p") == 0){
+			lServerPort.assign(argv[x+1]);
+		}
+		else{
+		LOG4CXX_ERROR(pLogger, " Unknown Opcode :");
+		}
+		x++;
 	}
 
 	int s = socket(AF_INET, SOCK_DGRAM, 0);
