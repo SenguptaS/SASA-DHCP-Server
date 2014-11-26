@@ -12,10 +12,11 @@
 #include <csignal>
 #include <signal.h>
 #include <log4cxx/logger.h>
+#include "PoolResponse.h"
 
 class IPPoolServerCommunicator {
 public:
-	IPPoolServerCommunicator(std::string lServerIPAddress, int lServerPort,unsigned short lServerIdentifer);
+	IPPoolServerCommunicator(std::string lServerIPAddress, int lServerPort,unsigned short lServerIdentifer,PoolResponse *pResponse);
 	virtual ~IPPoolServerCommunicator();
 	int getIpLease(std::string mac, std::string previousIp,unsigned int transactionId);
 	int confirmIp(std::string mac, std::string ip);
@@ -30,6 +31,7 @@ private:
 	unsigned int mRun;
 	static void* ResponseCommunicatorThread(void *pParams);
 	log4cxx::LoggerPtr pLogger;
+	PoolResponse *mpResponse;
 };
 
 #endif /* IPPOOLSERVERCOMMUNICATOR_H_ */

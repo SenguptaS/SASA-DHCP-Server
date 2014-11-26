@@ -22,14 +22,14 @@
 #include "sasaPackets.h"
 
 IPPoolServerCommunicator::IPPoolServerCommunicator(std::string lServerIPAddress,
-		int lServerPort, unsigned short lServerIdentifer) {
+		int lServerPort, unsigned short lServerIdentifer,PoolResponse *pResponse) {
 
 	mServerIPAddress = lServerIPAddress;
 	mServerPort = lServerPort;
 	mServerIdentifier = lServerIdentifer;
 	mRun = 0;
 	mClientSocket = 0;
-
+	mpResponse = pResponse;
 	this->pLogger = log4cxx::Logger::getLogger(ROOT_LOGGER);
 
 }
@@ -163,6 +163,7 @@ void* IPPoolServerCommunicator::ResponseCommunicatorThread(void *pParams) {
 					(SASA_responsePacket *) pIncomingPacketBuffer;
 
 		//Received a packet from the ip pool. It is placed in the pIncomingBuffer.
+
 	}
 }
 return NULL;

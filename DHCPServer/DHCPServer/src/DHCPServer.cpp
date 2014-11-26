@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
 				return EXIT_FAILURE;
 			}
 
-		} else if (strcmp(argv[x], "-lServerUDPSocket") == 0) {
+		} else if (strcmp(argv[x], "-s") == 0) {
 			lIpServer.assign(argv[x + 1]);
 		} else if (strcmp(argv[x], "-p") == 0) {
 			lServerPort.assign(argv[x + 1]);
@@ -81,9 +81,6 @@ int main(int argc, char* argv[]) {
 		}
 		x++;
 	}
-
-	//Start the ip pool sever communicator
-	IPPoolServerCommunicator ipsc(lIpServer, strtoul(lServerPort.c_str(),NULL,10)  ,(unsigned short int) lServerIdentifier );
 
 	int lServerUDPSocket = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -104,6 +101,14 @@ int main(int argc, char* argv[]) {
 		LOG4CXX_FATAL(pLogger, " bind failed - " << strerror(errno));
 		return 0;
 	}
+
+	PoolResponse lPoolResponse(lServerIdentifier,lIpServer,lServerUDPSocket);
+
+	//Start the ip pool sever communicator
+	IPPoolServerCommunicator ipsc(lIpServer,
+			strtoul(lServerPort.c_str(), NULL, 10),
+			(unsigned short int) lServerIdentifier,&lPoolResponse);
+	ipsc.Run();
 
 	// Bind Successful from Port 67
 
@@ -163,6 +168,8 @@ int main(int argc, char* argv[]) {
 			while (bConsumed < bLeft) {
 				//Read and process variable length field of the incoming dhcp packet.
 				//Options as mentioned in the  https://tools.ietf.org/html/rfc2132
+				std::string lOss;
+
 				unsigned char bOption = *pOptionsPtr;
 				if (bOption == 0xFF) {
 					LOG4CXX_INFO(pLogger, "End of options variable field");
@@ -261,20 +268,20 @@ int main(int argc, char* argv[]) {
 
 // Send data back to client
 
-		long int SendData = sendto(lServerUDPSocket, (const void*) buffer,
-				sizeof(ResponsePacket), 0, (struct sockaddr*) &SocketAddr,
-				sizeof(sockaddr_in));
-		{
-			if (SendData < 0) {
-
-				LOG4CXX_FATAL(pLogger, " Error - " << strerror(errno));
-				return 0;
-			} else {
-				LOG4CXX_INFO(pLogger,
-						" Data Successfully send- " << strerror(errno));
-				return 0;
-			}
-		}
+//		long int SendData = sendto(lServerUDPSocket, (const void*) buffer,
+//				sizeof(ResponsePacket), 0, (struct sockaddr*) &SocketAddr,
+//				sizeof(sockaddr_in));
+//		{
+//			if (SendData < 0) {
+//
+//				LOG4CXX_FATAL(pLogger, " Error - " << strerror(errno));
+//				return 0;
+//			} else {
+//				LOG4CXX_INFO(pLogger,
+//						" Data Successfully send- " << strerror(errno));
+//				return 0;
+//			}
+//		}
 	}
 
 }
