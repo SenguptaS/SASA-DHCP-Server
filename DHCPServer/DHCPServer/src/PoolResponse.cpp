@@ -14,6 +14,8 @@
 #include <log4cxx/logger.h>
 #include<sys/socket.h>
 #include<netdb.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 PoolResponse::PoolResponse(unsigned short nServerIdentifier,
 		std::string nInterfaceIpAddress, int nUDPSocket) {
@@ -23,8 +25,9 @@ PoolResponse::PoolResponse(unsigned short nServerIdentifier,
 	lUDPSocket = nUDPSocket;
 }
 
-int PoolResponse::ProcessIPOffer(const SASA_responsePacket* pResponsePacket) //< SASA POOL PACKET >)
-	{
+int PoolResponse::ProcessIPOffer(const SASA_responsePacket* pResponsePacket,
+		std::string nInterfaceIpAddress, int nUDPSocket) //< SASA POOL PACKET >)
+		{
 
 	ResponsePacket lResponsePacket;
 	memset(&lResponsePacket, 0, sizeof(ResponsePacket));
@@ -63,18 +66,24 @@ int PoolResponse::ProcessIPOffer(const SASA_responsePacket* pResponsePacket) //<
 	pOPHeader = (OPHeader*) pOptionsPtr;
 	pOPHeader->OPCode = 255;
 	pOPHeader->OPLength = 1;
-	pOptionsPtr+= 2;
+	pOptionsPtr += 2;
 
 	lTotalBytes = sizeof(ResponsePacket) + (pOptionsPtr - buffer);
 
 	sockaddr_in lSockaddress;
-	memset(&lSockaddress,0,sizeof(sockaddr_in));
-	lSockaddress.sin_addr = inet_addr("255.255.255.255");
+	memset(&lSockaddress, 0, sizeof(sockaddr_in));
+	lSockaddress.sin_addr.s_addr = inet_addr("255.255.255.255");
 	lSockaddress.sin_family = AF_INET;
 	lSockaddress.sin_port = htons(68);
 
-	int lBytesSent = sendto(this->lUDPSocket,buffer, lTotalBytes  ,0, &lSockaddress, sizeof(sockaddr_in));
-	LOG4CXX_INFO(pLogger,"Sent " << lBytesSent << " to client - "  << inet_ntoa(pResponsePacket->mAllocatedIp));
+	int lBytesSent = sendto(this->lUDPSocket, buffer, lTotalBytes, 0,
+			(sockaddr*)&lSockaddress, sizeof(sockaddr_in));
+
+	in_addr lInAddr;
+	lInAddr.s_addr = pResponsePacket->mAllocatedIp;
+
+	LOG4CXX_INFO(pLogger,
+			"Sent " << lBytesSent << " to client - " << inet_ntoa(lInAddr) );
 }
 
 PoolResponse::~PoolResponse() {

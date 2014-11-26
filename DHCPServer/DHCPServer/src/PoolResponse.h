@@ -9,11 +9,13 @@
 #define POOLRESPONSE_H_
 
 #include <log4cxx/logger.h>
+#include "sasaPackets.h"
 
 class PoolResponse {
 
 public:
-	PoolResponse();
+	PoolResponse(unsigned short nServerIdentifier,
+			std::string nInterfaceIpAddress, int nUDPSocket);
 	virtual ~PoolResponse();
 	int ProcessIPOffer(const SASA_responsePacket* pResponsePacket,std::string nInterfaceIpAddress, int nUDPSocket);
 

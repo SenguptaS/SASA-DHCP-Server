@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	//Start the ip pool sever communicator
-	IPPoolServerCommunicator ipsc(lIpServer, lServerPort, lServerIdentifier);
+	IPPoolServerCommunicator ipsc(lIpServer, strtoul(lServerPort.c_str(),NULL,10)  ,(unsigned short int) lServerIdentifier );
 
 	int lServerUDPSocket = socket(AF_INET, SOCK_DGRAM, 0);
 
