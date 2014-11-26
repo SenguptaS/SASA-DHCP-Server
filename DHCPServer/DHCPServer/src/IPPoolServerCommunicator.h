@@ -10,6 +10,7 @@
 #include <string>
 #include <stdio.h>
 #include <csignal>
+#include <signal.h>
 #include <log4cxx/logger.h>
 
 class IPPoolServerCommunicator {
@@ -26,7 +27,7 @@ private:
 	int mServerPort;
 	unsigned short mServerIdentifier;
 	int mClientSocket;
-	sig_atomic_t mRun;
+	unsigned int mRun;
 	static void* ResponseCommunicatorThread(void *pParams);
 	log4cxx::LoggerPtr pLogger;
 };
