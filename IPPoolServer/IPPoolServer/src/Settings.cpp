@@ -9,8 +9,6 @@
 #include <fstream>
 
 Settings::Settings(std::string lSettingsFile) {
-	this->mDBPort = 3306;
-	this->mServerPort = 9191;
 	mSettingsFile = lSettingsFile;
 }
 
