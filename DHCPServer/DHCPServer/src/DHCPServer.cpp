@@ -14,13 +14,12 @@
 #include <errno.h>
 #include <string.h>
 #include "DHCPPackets.h"
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "IPPoolServerCommunicator.h"
 #include <sstream>
-#include "DHCPServerConstants.h"
 #include <stdlib.h>
+#include "DHCPServerConstants.h"
 
 using namespace std;
 
@@ -36,7 +35,7 @@ std::string lInterfaceAddress;
 int main(int argc, char* argv[]) {
 
 	unsigned int lServerIdentifier = 0;
-
+	//This should work
 	//Initialize the logger from the log.cfg file
 	log4cxx::PropertyConfigurator::configure("config/log.cfg");
 
@@ -102,12 +101,12 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
-	PoolResponse lPoolResponse(lServerIdentifier,lIpServer,lServerUDPSocket);
+	PoolResponse lPoolResponse(lServerIdentifier, lIpServer, lServerUDPSocket);
 
 	//Start the ip pool sever communicator
 	IPPoolServerCommunicator ipsc(lIpServer,
 			strtoul(lServerPort.c_str(), NULL, 10),
-			(unsigned short int) lServerIdentifier,&lPoolResponse);
+			(unsigned short int) lServerIdentifier, &lPoolResponse);
 	ipsc.Run();
 
 	// Bind Successful from Port 67

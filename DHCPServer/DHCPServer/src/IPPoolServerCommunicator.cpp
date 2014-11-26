@@ -6,18 +6,27 @@
  */
 
 #include "IPPoolServerCommunicator.h"
-#include <string>
-#include <memory.h>
-#include <sys/types.h>
-#include "DHCPPackets.h"
-#include <sys/socket.h>
-#include <netinet/in.h>
+
 #include <arpa/inet.h>
+#include <bits/socket_type.h>
 #include <errno.h>
-#include <log4cxx/logger.h>
-#include <log4cxx/propertyconfigurator.h>
-#include <netdb.h>
+#include <log4cxx/helpers/messagebuffer.h>
+#include <log4cxx/helpers/objectptr.h>
+#include <log4cxx/level.h>
+//#include <log4cxx/logger.h>
+//#include <log4cxx/propertyconfigurator.h>
+#include <log4cxx/spi/location/locationinfo.h>
+//#include <memory.h>
+//#include <netdb.h>
+#include <netinet/in.h>
+#include <pthread.h>
+#include <sys/socket.h>
+//#include <sys/types.h>
 #include <unistd.h>
+#include <cstring>
+//#include <string>
+
+#include "DHCPPackets.h"
 #include "DHCPServerConstants.h"
 #include "sasaPackets.h"
 
@@ -41,6 +50,7 @@ int IPPoolServerCommunicator::Run() {
 		this->mRun = 1;
 		pthread_t lPthreadT;
 		pthread_attr_t attr;
+		pthread_attr_init(&attr);
 		int error_number = pthread_create(&lPthreadT, &attr,
 				IPPoolServerCommunicator::ResponseCommunicatorThread, this);
 	}
