@@ -23,6 +23,7 @@
 #include "ThreadPassable.h"
 #include "IPPool.h"
 #include "sasaPackets.h"
+#include "sasaProtocol.h"
 
 using namespace std;
 
@@ -32,19 +33,27 @@ void *SocketThread(void *pArguments) {
 
 	ThreadPassable* pThreadPassable =(ThreadPassable*) pArguments;
 	unsigned char lPacketBuffer[1024];
+	sasaProtocol lSasaProtocol(pThreadPassable->mSettings);
 
 	int lRecdBytes =0;
+	int lBytesSent =0;
 
 	while ( lRecdBytes = read(pThreadPassable->mClientSocket,lPacketBuffer,sizeof(requestPacket)))
 	{
-		requestPacket *pReqPacket = (requestPacket*) lPacketBuffer;
+		requestPacket* pReqPacket = (requestPacket*) lPacketBuffer;
+		lSasaProtocol.setRequestPacket(pReqPacket);
+		lSasaProtocol.ipRequestProcessing();
+		responsePacket* pResPacket;
+		pResPacket = lSasaProtocol.getResponsePacket();
+		lBytesSent = send(pThreadPassable->mClientSocket,(void*) &pResPacket,sizeof(responsePacket),0);
 
-		switch( pReqPacket->mOpField )
-		{
+		if(lBytesSent < 0) {
+			LOG4CXX_ERROR(pLogger,"Failed to send response packet to client "
+					<< inet_ntoa(pThreadPassable->mClientIP.sin_addr)
+					<< " - " << strerror((int)errno));
 		}
+
 	}
-
-
 
 	delete pThreadPassable;
 	return EXIT_SUCCESS;
@@ -172,7 +181,10 @@ int main(int argc, char *argv[]) {
 				pthread_attr_t lThreadAttr;
 				pthread_t lNewThread =0;
 				ThreadPassable * pThreadPassable;
-				pThreadPassable = new ThreadPassable();
+				pThreadPassable = new ThreadPassable(lSettings);
+				pThreadPassable->mClientSocket = lNewSocketFd;
+				pThreadPassable->mClientIP = lClientAddr;
+
 				int ThreadRetval = pthread_create(&lNewThread,&lThreadAttr,SocketThread,pThreadPassable);
 				if(ThreadRetval)
 				{

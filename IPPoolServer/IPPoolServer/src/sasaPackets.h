@@ -7,7 +7,7 @@
 
 #ifndef SASAPACKETS_H_
 #define SASAPACKETS_H_
-
+#include "IPPoolServerConstants.h"
 
 // Request Packet
 struct requestPacket{
@@ -15,7 +15,7 @@ struct requestPacket{
 	char mOpField;
 	unsigned short int mServerId;
 	unsigned int mChecksum;
-	char mSrcHwAddress[6];
+	char mSrcHwAddress[HWD_LENGTH];
 	unsigned int mRequestId;
 	unsigned int mRequestedIp;
 };
@@ -26,7 +26,7 @@ struct responsePacket{
 	char mOpField;
 	unsigned short int mServerId;
 	unsigned int mChecksum;
-	char mSrcHwAddress[6];
+	char mSrcHwAddress[HWD_LENGTH];
 	unsigned int mRequestId;
 	unsigned int mAllocationValidTime;
 	unsigned int mAllocatedIp;

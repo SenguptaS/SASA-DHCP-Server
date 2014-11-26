@@ -9,14 +9,16 @@
 #define THREADPASSABLE_H_
 
 #include <netinet/in.h>
+#include "Settings.h"
 
 class ThreadPassable {
 public:
-	ThreadPassable();
+	ThreadPassable(const Settings &lSettings);
 	virtual ~ThreadPassable();
 
 	int mClientSocket;
 	sockaddr_in mClientIP;
+	const Settings& mSettings;
 
 };
 

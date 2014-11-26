@@ -17,6 +17,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include "IPPoolServerConstants.h"
 
 using namespace log4cxx;
 using namespace std;
@@ -26,15 +27,15 @@ class sasaProtocol{
 public:
 	sasaProtocol(const Settings& lSettings);
 
-	void setRequestPacket(struct requestPacket lReqPack);
-	struct responsePacket getResponsePacket();
+	void setRequestPacket(struct requestPacket* lReqPack);
+	struct responsePacket* getResponsePacket();
 	int ipRequestProcessing();
 
 
 private:
 	LoggerPtr mPLogger;
-	struct requestPacket mReqPack;
-	struct responsePacket mResPack;
+	struct requestPacket* mReqPack;
+	struct responsePacket* mResPack;
 	const Settings& mSettings;
 
 	int copyReqToResFields();
@@ -48,6 +49,7 @@ private:
 
 };
 
+
 sasaProtocol::sasaProtocol(const Settings& lSettings)
 	: mSettings(lSettings){
 	mPLogger = Logger::getLogger(ROOT_LOGGER);
@@ -59,10 +61,11 @@ int sasaProtocol::copyReqToResFields(){
 		return -1;
 	}
 	else{
-		mResPack.mProtocolType = mReqPack.mProtocolType;
-		mResPack.mServerId = mReqPack.mServerId;
-		mResPack.mSrcHwAddress = mReqPack.mSrcHwAddress;
-		mResPack.mRequestId = mReqPack.mRequestId;
+		mResPack->mProtocolType = mReqPack->mProtocolType;
+		mResPack->mServerId = mReqPack->mServerId;
+		for(int i=1; i<= HWD_LENGTH; i++)
+			mResPack->mSrcHwAddress[i] = mReqPack->mSrcHwAddress[i];
+		mResPack->mRequestId = mReqPack->mRequestId;
 		LOG4CXX_INFO(mPLogger,"Copied required fields in response packet from request packet");
 		return 0;
 	}
@@ -71,18 +74,18 @@ int sasaProtocol::copyReqToResFields(){
 int sasaProtocol::getOtherConfiguration(){
 	if(mResPack != NULL){
 		in_addr lInAddr;
-		mResPack.mChecksum = 0;
+		mResPack->mChecksum = 0;
 
-		mResPack.mAllocationValidTime = mSettings.mLeaseTime;
+		mResPack->mAllocationValidTime = mSettings.mLeaseTime;
 
 		inet_aton(mSettings.mGatewayIp.c_str(), &lInAddr);
-		mResPack.mGatewayIp = lInAddr.s_addr;
+		mResPack->mGatewayIp = lInAddr.s_addr;
 
 		inet_aton(mSettings.mSubnetMask.c_str(), &lInAddr);
-		mResPack.mSubnetMask = lInAddr.s_addr;
+		mResPack->mSubnetMask = lInAddr.s_addr;
 
 		inet_aton(mSettings.mDnsIp.c_str(), &lInAddr);
-		mResPack.mDnsIp = lInAddr.s_addr;
+		mResPack->mDnsIp = lInAddr.s_addr;
 
 		LOG4CXX_INFO(mPLogger,"Other configurations set..");
 	}
@@ -97,8 +100,8 @@ int sasaProtocol::ipOffer(){
 
 	if(copyReqToResFields() == 0){
 
-		IpPoolMappings lIpPoolMapping;
-		IPPool lIpPool;
+		IpPoolMappings lIpPoolMapping(mSettings);
+		IPPool lIpPool(mSettings);
 		string lIpAddr;
 		
 		LOG4CXX_INFO(mPLogger,"Creating a new ip-mac mapping..");
@@ -108,10 +111,10 @@ int sasaProtocol::ipOffer(){
 			LOG4CXX_INFO(mPLogger,"Next free ip received from pool is "<< lIpAddr);
 			in_addr lINAddr;
 			inet_aton(lIpAddr.c_str(),&lINAddr);
-			mResPack.mAllocatedIp = lINAddr.s_addr;
+			mResPack->mAllocatedIp = lINAddr.s_addr;
 
 			// insert the entry of ip-mac into mapping table
-			if(lIpPoolMapping.insertMapping(mResPack.mSrcHwAddress, lIpAddr)){
+			if(lIpPoolMapping.insertMapping(mResPack->mSrcHwAddress, lIpAddr)){
 				LOG4CXX_ERROR(mPLogger,"IP-MAC mapping failed to be created..");
 				return -1;
 			}
@@ -119,7 +122,7 @@ int sasaProtocol::ipOffer(){
 				LOG4CXX_INFO(mPLogger,"IP-MAC mapping successfully created..");
 			}
 
-			mResPack.mOpField = '2';
+			mResPack->mOpField = '2';
 			getOtherConfiguration();
 
 			LOG4CXX_INFO(mPLogger,"IP lease offered successfully!!");
@@ -138,25 +141,25 @@ int sasaProtocol::ipRequest(){
 
 	if(copyReqToResFields() == 0){
 
-			IpPoolMappings lIpPoolMapping;
-			IPPool lIpPool;
+			IpPoolMappings lIpPoolMapping(mSettings);
+			IPPool lIpPool(mSettings);
 			string lIpAddr;
 			in_addr lInAddr;
-			lInAddr.s_addr = mReqPack.mRequestedIp;
+			lInAddr.s_addr = mReqPack->mRequestedIp;
 
-			LOG4CXX_INFO(mPLogger,"Checking ip-mac mapping in the pool for requested Ip "<< mReqPack.mRequestedIp <<" and MAC "<< mReqPack.mSrcHwAddress);
+			LOG4CXX_INFO(mPLogger,"Checking ip-mac mapping in the pool for requested Ip "<< mReqPack->mRequestedIp <<" and MAC "<< mReqPack->mSrcHwAddress);
 
-			if(!(lIpPoolMapping.checkValidity(mReqPack.mSrcHwAddress,inet_ntoa(lInAddr)))){
+			if(!(lIpPoolMapping.checkValidity(mReqPack->mSrcHwAddress,inet_ntoa(lInAddr)))){
 				LOG4CXX_INFO(mPLogger,"Mapping not found thus offering a new IP from the pool");
 				ipOffer();
 			}
 			else{
 				LOG4CXX_INFO(mPLogger,"Mapping found..");
-				mResPack.mAllocatedIp = mReqPack.mRequestedIp;
-				mResPack.mOpField = '4';
+				mResPack->mAllocatedIp = mReqPack->mRequestedIp;
+				mResPack->mOpField = '4';
 				getOtherConfiguration();
 				ipLeaseAcknowlegement();
-				LOG4CXX_INFO(mPLogger,"Acknowledging Ip Assignment "<< inet_ntoa(lInAddr)<<" to client with MAC "<< mReqPack.mSrcHwAddress);
+				LOG4CXX_INFO(mPLogger,"Acknowledging Ip Assignment "<< inet_ntoa(lInAddr)<<" to client with MAC "<< mReqPack->mSrcHwAddress);
 			}
 		}
 
@@ -164,13 +167,13 @@ int sasaProtocol::ipRequest(){
 }
 
 int sasaProtocol::ipRelease(){
-	IpPoolMappings lIpPoolMapping;
-	IPPool lIpPool;
+	IpPoolMappings lIpPoolMapping(mSettings);
+	IPPool lIpPool(mSettings);
 
 	if(mReqPack != NULL){
 		in_addr lInAddr;
-		lInAddr.s_addr = mReqPack.mRequestedIp;
-		if(lIpPoolMapping.deleteMapping(mReqPack.mSrcHwAddress, inet_ntoa(lInAddr))){
+		lInAddr.s_addr = mReqPack->mRequestedIp;
+		if(lIpPoolMapping.deleteMapping(mReqPack->mSrcHwAddress, inet_ntoa(lInAddr))){
 			LOG4CXX_ERROR(mPLogger,"IP-MAC mapping could not be deleted");
 			return -1;
 		}
@@ -190,18 +193,18 @@ int sasaProtocol::ipRelease(){
 }
 
 int sasaProtocol::ipLeaseAcknowlegement(){
-	IpPoolMappings lIpPoolMapping;
+	IpPoolMappings lIpPoolMapping(mSettings);
 
 	if(mReqPack != NULL){
-		if((mReqPack.mSrcHwAddress != NULL) && (mReqPack.mRequestedIp != 0)){
+		if((mReqPack->mSrcHwAddress != NULL) && (mReqPack->mRequestedIp != 0)){
 			in_addr lInAddr;
-			lInAddr.s_addr = mReqPack.mRequestedIp;
-			if(lIpPoolMapping.setBindingFlag(mReqPack.mSrcHwAddress, inet_ntoa(lInAddr))){
-				LOG4CXX_ERROR(mPLogger,"Binding failed corresponding to IP "<< inet_ntoa(lInAddr)<<" and MAC "<< mReqPack.mSrcHwAddress);
+			lInAddr.s_addr = mReqPack->mRequestedIp;
+			if(lIpPoolMapping.setBindingFlag(mReqPack->mSrcHwAddress, inet_ntoa(lInAddr))){
+				LOG4CXX_ERROR(mPLogger,"Binding failed corresponding to IP "<< inet_ntoa(lInAddr)<<" and MAC "<< mReqPack->mSrcHwAddress);
 				return -1;
 			}
 			else{
-				LOG4CXX_INFO(mPLogger,"Binding successful corresponding to IP "<< inet_ntoa(lInAddr)<<" and MAC "<< mReqPack.mSrcHwAddress);
+				LOG4CXX_INFO(mPLogger,"Binding successful corresponding to IP "<< inet_ntoa(lInAddr)<<" and MAC "<< mReqPack->mSrcHwAddress);
 
 			}
 		}
@@ -212,9 +215,9 @@ int sasaProtocol::ipLeaseAcknowlegement(){
 int sasaProtocol::otherConfigurationReq(){
 	if(copyReqToResFields() == 0){
 		in_addr lInAddr;
-		lInAddr.s_addr = mReqPack.mRequestedIp;
-		mResPack.mOpField = '5';
-		mResPack.mRequestId = mReqPack.mRequestedIp;
+		lInAddr.s_addr = mReqPack->mRequestedIp;
+		mResPack->mOpField = '5';
+		mResPack->mRequestId = mReqPack->mRequestedIp;
 		getOtherConfiguration();
 		LOG4CXX_INFO(mPLogger,"Configurations gathered for IP "<< inet_ntoa(lInAddr));
 	}
@@ -224,11 +227,11 @@ int sasaProtocol::otherConfigurationReq(){
 	return 0;
 }
 
-void sasaProtocol::setRequestPacket(struct requestPacket lRespack){
+void sasaProtocol::setRequestPacket(struct requestPacket* lRespack){
 	this->mReqPack = lRespack;
 }
 
-struct responsePacket sasaProtocol::getResponsePacket(){
+struct responsePacket* sasaProtocol::getResponsePacket(){
 	return this->mResPack;
 }
 
@@ -236,12 +239,12 @@ int sasaProtocol::ipRequestProcessing(){
 	char lOpcode;
 
 	if(mReqPack != NULL){
-		lOpcode = mReqPack.mOpField;
+		lOpcode = mReqPack->mOpField;
 
 		switch(lOpcode){
 		case '1':
 			// Request for new / old Ip
-			if(mReqPack.mRequestedIp == 0)
+			if(mReqPack->mRequestedIp == 0)
 				ipOffer();
 			else
 				ipRequest();
