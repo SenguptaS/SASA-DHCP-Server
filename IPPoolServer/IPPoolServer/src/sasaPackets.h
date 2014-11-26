@@ -9,6 +9,7 @@
 #define SASAPACKETS_H_
 #include "IPPoolServerConstants.h"
 
+#pragma pack(1)
 // Request Packet
 struct requestPacket{
 	char mProtocolType;
@@ -35,5 +36,6 @@ struct responsePacket{
 	unsigned int mDnsIp;
 };
 
+#pragma pack(0)
 
 #endif /* SASAPACKETS_H_ */

@@ -29,6 +29,7 @@ IPPoolServerCommunicator::IPPoolServerCommunicator(std::string lServerIPAddress,
 	mRun = 0;
 	mClientSocket = 0;
 	pLogger = log4cxx::Logger::getLogger(ROOT_LOGGER);
+
 }
 
 int IPPoolServerCommunicator::Run() {
@@ -66,6 +67,8 @@ int IPPoolServerCommunicator::getIpLease(std::string mac,
 	r.mChecksum = 0;
 	r.mServerId = mServerIdentifier;
 	r.mProtocolType = 4;
+
+	//Send the packet to the IP Pool server and recv a response
 
 	return 0;
 }
@@ -108,11 +111,57 @@ void* IPPoolServerCommunicator::ResponseCommunicatorThread(void *pParams) {
 
 	char pIncomingPacketBuffer[1024];
 	while (pParent->mRun) {
-		int nOBytesRecd = recv(pParent->mClientSocket, pIncomingPacketBuffer,
-				sizeof(RequestPacketPS), 0);
-		LOG4CXX_DEBUG(pParent->pLogger,"Recd data packet from the pool");
 
-		//Received a packet from the ip pool. It is placed in the pIncomingBuffer.
+		pParent->mClientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+		if (pParent->mClientSocket < 0) {
+			LOG4CXX_EROR(pParent->pLogger,
+					"Failed to create pool socket - " << strerror(errno));
+			return 0x00;
+		}
+
+		sockaddr_in lAddress;
+		memset(lAddress, 0, sizeof(sockaddr_in));
+
+		lAddress.sin_addr = inet_addr(pParent->mServerIPAddress.c_str());
+		lAddress.sin_family
+		AF_INET;
+		lAddress.sin_port = htons(pParent->mServerPort);
+		LOG4CXX_INFO(pParent->pLogger,
+				"Connecting to IPPool Server on " << pParent->mServerIPAddress << " : " << pParent->mServerPort);
+		int lRetVal = connect(pParent->mClientSocket, lAddress,
+				sizeof(sockaddr_in));
+
+		if (lRetVal < 0) {
+			LOG4CXX_ERROR(pLogger,
+					"Failed to connect to IP Pool server : " << strerror(errno));
+			close(pParent->mClientSocket);
+			continue;
+		}
+
+		LOG4CXX_ERROR(pParent->pLogger,
+				"Connected to the ip pool server successfully");
+
+		while (true) {
+			int nOBytesRecd = recv(pParent->mClientSocket,
+					pIncomingPacketBuffer, sizeof(SASA_responsePacket), 0);
+
+			if(nOBytesRecd == 0 )
+			{
+				LOG4CXX_ERROR(pParent->pLogger,"IP Pool server has closed the connection");
+				break;
+			}
+
+			if(nOBytesRecd < 0)
+			{
+				LOG4CXX_ERROR(pParent->pLogger,"Connection error - " << strerror(errno));
+				break;
+			}
+
+			SASA_responsePacket *pPoolResponsePacket =(SASA_responsePacket *) pIncomingPacketBuffer;
+			pPoolResponsePacket->
+			//Received a packet from the ip pool. It is placed in the pIncomingBuffer.
+		}
 	}
-return NULL;
+	return NULL;
 }

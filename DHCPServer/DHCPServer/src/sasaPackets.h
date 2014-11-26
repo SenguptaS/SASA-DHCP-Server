@@ -8,14 +8,14 @@
 #ifndef SASAPACKETS_H_
 #define SASAPACKETS_H_
 
-
+#pragma pack(1)
 // Request Packet
 struct SASA_requestPacket{
 	char mProtocolType;
 	char mOpField;
 	unsigned short int mServerId;
 	unsigned int mChecksum;
-	unsigned long int mSrcHwAddress;
+	unsigned char mSrcHwAddress[6];
 	unsigned int mRequestId;
 	unsigned int mRequestedIp;
 };
@@ -26,7 +26,7 @@ struct SASA_responsePacket{
 	char mOpField;
 	unsigned short int mServerId;
 	unsigned int mChecksum;
-	unsigned long int mSrcHwAddress;
+	unsigned char mSrcHwAddress[6];
 	unsigned int mRequestId;
 	unsigned int mAllocationValidTime;
 	unsigned int mAllocatedIp;
@@ -35,5 +35,6 @@ struct SASA_responsePacket{
 	unsigned int mDnsIp;
 };
 
+#pragma pack(0)
 
 #endif /* SASAPACKETS_H_ */

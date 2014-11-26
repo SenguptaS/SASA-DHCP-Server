@@ -67,7 +67,7 @@ struct RequestPacket{
 	unsigned int mYourAddress; // 4 byte
 	unsigned int mServerAddress; // 4 byte
 	unsigned int mGatewayAddress; // 4 byte
-	unsigned long int mClientHardwareAddres; // 16 byte
+	unsigned char mClientHardwareAddres[16]; //16 byte
 	char mServerName[64]; // 64 byte
 	char mBootFileName[128]; // 128 byte
 
@@ -85,7 +85,7 @@ struct ResponsePacket{
 	unsigned int mYourAddress; // 4 byte
 	unsigned int mServerAddress; // 4 byte
 	unsigned int mGatewayAddress; // 4 byte
-	unsigned long int mClientHardwareAddress; // 16 byte
+	unsigned char mClientHardwareAddress[16]; // 6 byte
 	char mServerName[64]; // 64 byte
 	char mBootFileName[128]; // 128 byte
 
@@ -104,7 +104,7 @@ struct AcknowledgmentPacket {
 	unsigned int mYourAddress; // 4 byte
 	unsigned int mServerAddress; // 4 byte
 	unsigned int mGatewayAddress; // 4 byte
-	unsigned long int mClientHardwareAddress; // 16 byte
+	unsigned char mClientHardwareAddress[6]; // 6 byte
 	char mServerName[64]; // 64 byte
 	char mBootFileName[128]; // 128 byte
 };

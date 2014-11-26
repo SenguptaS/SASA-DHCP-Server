@@ -15,10 +15,13 @@ class PoolResponse {
 public:
 	PoolResponse();
 	virtual ~PoolResponse();
-	int ProcessIPOffer();
+	int ProcessIPOffer(const SASA_responsePacket* pResponsePacket,std::string nInterfaceIpAddress, int nUDPSocket);
 
 private:
 	log4cxx::LoggerPtr pLogger;
+	unsigned short lServerIdentifier;
+	std::string lLocalServerIPAddress;
+	int lUDPSocket;
 
 #pragma pack(1)
 	struct OPHeader {
