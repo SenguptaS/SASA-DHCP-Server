@@ -266,7 +266,6 @@ int main(int argc, char* argv[]) {
 		}
 
 // Send data back to client
-
 //		long int SendData = sendto(lServerUDPSocket, (const void*) buffer,
 //				sizeof(ResponsePacket), 0, (struct sockaddr*) &SocketAddr,
 //				sizeof(sockaddr_in));

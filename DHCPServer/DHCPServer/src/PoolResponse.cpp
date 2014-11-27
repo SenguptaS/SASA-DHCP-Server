@@ -5,8 +5,6 @@
  *      Author: ateiv
  */
 
-#include "PoolResponse.h"
-#include "sasaPackets.h"
 #include<string.h>
 #include "DHCPPackets.h"
 #include<sys/types.h>
@@ -16,6 +14,8 @@
 #include<netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include "PoolResponse.h"
+#include "sasaPackets.h"
 
 PoolResponse::PoolResponse(unsigned short nServerIdentifier,
 		std::string nInterfaceIpAddress, int nUDPSocket) {

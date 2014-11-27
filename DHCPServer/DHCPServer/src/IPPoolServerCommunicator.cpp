@@ -8,7 +8,6 @@
 #include "IPPoolServerCommunicator.h"
 
 #include <arpa/inet.h>
-#include <bits/socket_type.h>
 #include <errno.h>
 #include <log4cxx/helpers/messagebuffer.h>
 #include <log4cxx/helpers/objectptr.h>
@@ -81,6 +80,17 @@ int IPPoolServerCommunicator::getIpLease(std::string mac,
 	r.mProtocolType = 4;
 
 	//Send the packet to the IP Pool server and recv a response
+	int bSent = send(this->mClientSocket,&r,sizeof(RequestPacketPS),0);
+	if(bSent < 0)
+	{
+		LOG4CXX_ERROR(pLogger,"Failed sending request to IP Pool server " << strerror(errno));
+		return 0;
+	}
+	else
+	{
+		LOG4CXX_ERROR(pLogger,"Sent request to ip pool");
+		return 1;
+	}
 
 	return 0;
 }
@@ -147,6 +157,7 @@ void* IPPoolServerCommunicator::ResponseCommunicatorThread(void *pParams) {
 			LOG4CXX_ERROR(lLogger,
 					"Failed to connect to IP Pool server : " << strerror(errno));
 			close(pParent->mClientSocket);
+			::sleep(5);
 			continue;
 		}
 
