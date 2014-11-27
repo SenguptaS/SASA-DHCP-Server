@@ -21,9 +21,10 @@ Utility::~Utility() {
 
 char* Utility::GetPrintableMac(char* pMacIn)
 {
-		printf(Utility::macBuffer,"%02X:%02X:%02X:%02X:%02X:%02X",
-				pMacIn[0],pMacIn[1],pMacIn[2],pMacIn[3],pMacIn[4],pMacIn[5],pMacIn[6]);
 
+		sprintf(Utility::macBuffer,"%02X:%02X:%02X:%02X:%02X:%02X",
+				(unsigned char) pMacIn[0],(unsigned char) pMacIn[1], (unsigned char)pMacIn[2],(unsigned char)pMacIn[3],
+				(unsigned char)pMacIn[4],(unsigned char)pMacIn[5],(unsigned char)pMacIn[6]);
 		return Utility::macBuffer;
 }
 

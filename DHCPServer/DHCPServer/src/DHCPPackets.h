@@ -88,7 +88,7 @@ struct ResponsePacket{
 	unsigned char mClientHardwareAddress[16]; // 6 byte
 	char mServerName[64]; // 64 byte
 	char mBootFileName[128]; // 128 byte
-
+	char mMagicCookie[4];
 };
 
 //Acknowledgment Packet

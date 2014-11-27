@@ -20,6 +20,7 @@
 #include <sstream>
 #include <stdlib.h>
 #include "DHCPServerConstants.h"
+#include "Utility.h"
 
 using namespace std;
 
@@ -89,6 +90,14 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
+	int optVal =1;
+	optVal = setsockopt(lServerUDPSocket,SOL_SOCKET,SO_BROADCAST,&optVal,sizeof(int));
+	if(optVal <0)
+	{
+		LOG4CXX_FATAL(pLogger,"Failed to set socket broadcast flag - " << strerror(errno));
+		return EXIT_FAILURE;
+	}
+
 	struct sockaddr_in SocketAddr;
 	SocketAddr.sin_addr.s_addr = 0;
 	SocketAddr.sin_family = AF_INET;
@@ -151,17 +160,17 @@ int main(int argc, char* argv[]) {
 
 				if (pDiscoverPacket->mServerAddress == 0) {
 					LOG4CXX_INFO(pLogger,
-							" DHCP Discover - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : " << (int) pDiscoverPacket ->mClientHardwareAddress[0] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[1] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[2] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[3] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[4] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[5]);
+							" DHCP Discover - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : " << Utility::GetPrintableMac(pDiscoverPacket->mClientHardwareAddress) );
 
 				} else {
 					LOG4CXX_INFO(pLogger,
-							" DHCP Request - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : "<< pDiscoverPacket->mClientHardwareAddress);
+							" DHCP Request - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : "<< Utility::GetPrintableMac(pDiscoverPacket->mClientHardwareAddress));
 				}
 			}
 
 			else if (pDiscoverPacket->mOpField == 2) {
 				LOG4CXX_INFO(pLogger,
-						" DHCP ACK - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : "<< pDiscoverPacket->mClientHardwareAddress);
+						" DHCP ACK - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : "<< Utility::GetPrintableMac(pDiscoverPacket->mClientHardwareAddress) );
 			}
 
 			while (bConsumed < bLeft) {

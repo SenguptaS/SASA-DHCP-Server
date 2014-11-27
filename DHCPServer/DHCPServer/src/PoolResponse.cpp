@@ -16,6 +16,7 @@
 #include <arpa/inet.h>
 #include "PoolResponse.h"
 #include "sasaPackets.h"
+#include <errno.h>
 
 PoolResponse::PoolResponse(unsigned short nServerIdentifier,
 		std::string nInterfaceIpAddress, int nUDPSocket) {
@@ -25,7 +26,7 @@ PoolResponse::PoolResponse(unsigned short nServerIdentifier,
 	lUDPSocket = nUDPSocket;
 }
 
-int PoolResponse::ProcessIPOffer(const SASA_responsePacket* pResponsePacket,
+int PoolResponse::ProcessIPOffer(SASA_responsePacket* pResponsePacket,
 		std::string nInterfaceIpAddress, int nUDPSocket) //< SASA POOL PACKET >)
 		{
 
@@ -35,12 +36,17 @@ int PoolResponse::ProcessIPOffer(const SASA_responsePacket* pResponsePacket,
 	lResponsePacket.mOpField = pResponsePacket->mOpField;
 	memcpy(&lResponsePacket.mClientHardwareAddress,
 			&pResponsePacket->mSrcHwAddress, 6);
+	lResponsePacket.mFlags = 0x0100;
 	lResponsePacket.mTransactionId = pResponsePacket->mRequestId;
 	lResponsePacket.mGatewayAddress = pResponsePacket->mGatewayIp;
 	lResponsePacket.mYourAddress = pResponsePacket->mAllocatedIp;
 	lResponsePacket.mHeaderLength = 0x06;
 	lResponsePacket.mHeaderType = 0x01;
 	lResponsePacket.mServerAddress = inet_addr(lLocalServerIPAddress.c_str());
+	lResponsePacket.mMagicCookie[0] = 0x63;
+	lResponsePacket.mMagicCookie[1] = 0x82;
+	lResponsePacket.mMagicCookie[2] = 0x53;
+	lResponsePacket.mMagicCookie[3] = 0x63;
 
 	unsigned int lTotalBytes = 0;
 
@@ -50,17 +56,25 @@ int PoolResponse::ProcessIPOffer(const SASA_responsePacket* pResponsePacket,
 
 	char* pOptionsPtr = &buffer[sizeof(ResponsePacket)];
 
+
 	OPHeader *pOPHeader = (OPHeader*) pOptionsPtr;
+	pOPHeader->OPCode = 53;
+	pOPHeader->OPLength = 1;
+	*(pOptionsPtr+2) = 0x02;
+	pOptionsPtr += 3;
+
+
+	pOPHeader = (OPHeader*) pOptionsPtr;
 	pOPHeader->OPCode = 51;
 	pOPHeader->OPLength = 4;
-	memcpy((&pOPHeader + 2),
+	memcpy((pOPHeader + 2),
 			(const char*) &pResponsePacket->mAllocationValidTime, 4);
 	pOptionsPtr += 4 + 2;
 
 	pOPHeader = (OPHeader*) pOptionsPtr;
 	pOPHeader->OPCode = 1;
 	pOPHeader->OPLength = 4;
-	memcpy((&pOPHeader + 2), (const char*) &pResponsePacket->mSubnetMask, 4);
+	memcpy((pOPHeader + 2), (const char*) &pResponsePacket->mSubnetMask, 4);
 	pOptionsPtr += 2 + 4;
 
 	pOPHeader = (OPHeader*) pOptionsPtr;
@@ -68,7 +82,7 @@ int PoolResponse::ProcessIPOffer(const SASA_responsePacket* pResponsePacket,
 	pOPHeader->OPLength = 1;
 	pOptionsPtr += 2;
 
-	lTotalBytes = sizeof(ResponsePacket) + (pOptionsPtr - buffer);
+	lTotalBytes = (pOptionsPtr - buffer);
 
 	sockaddr_in lSockaddress;
 	memset(&lSockaddress, 0, sizeof(sockaddr_in));
@@ -79,11 +93,17 @@ int PoolResponse::ProcessIPOffer(const SASA_responsePacket* pResponsePacket,
 	int lBytesSent = sendto(this->lUDPSocket, buffer, lTotalBytes, 0,
 			(sockaddr*)&lSockaddress, sizeof(sockaddr_in));
 
+	if(lBytesSent < 0)
+	{
+		LOG4CXX_ERROR(pLogger,"Failed to send dhcp offer to client - " << strerror(errno));
+		return 0;
+	}
 	in_addr lInAddr;
 	lInAddr.s_addr = pResponsePacket->mAllocatedIp;
 
 	LOG4CXX_INFO(pLogger,
 			"Sent " << lBytesSent << " to client - " << inet_ntoa(lInAddr) );
+	return lBytesSent;
 }
 
 PoolResponse::~PoolResponse() {

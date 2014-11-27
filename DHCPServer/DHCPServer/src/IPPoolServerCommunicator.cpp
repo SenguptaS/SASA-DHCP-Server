@@ -83,7 +83,7 @@ int IPPoolServerCommunicator::getIpLease(std::string mac,
 	int bSent = send(this->mClientSocket,&r,sizeof(RequestPacketPS),0);
 	if(bSent < 0)
 	{
-		LOG4CXX_ERROR(pLogger,"Failed sending request to IP Pool server " << strerror(errno));
+		LOG4CXX_ERROR(pLogger,"Fai led sending request to IP Pool server " << strerror(errno));
 		return 0;
 	}
 	else
@@ -165,6 +165,7 @@ void* IPPoolServerCommunicator::ResponseCommunicatorThread(void *pParams) {
 				"Connected to the ip pool server successfully");
 
 		while (true) {
+			memset(pIncomingPacketBuffer,0x00,1024);
 			int nOBytesRecd = recv(pParent->mClientSocket,
 					pIncomingPacketBuffer , sizeof(SASA_responsePacket), 0);
 
@@ -182,6 +183,7 @@ void* IPPoolServerCommunicator::ResponseCommunicatorThread(void *pParams) {
 
 			SASA_responsePacket *pPoolResponsePacket =
 					(SASA_responsePacket *) pIncomingPacketBuffer;
+			pParent->mpResponse->ProcessIPOffer(pPoolResponsePacket,pParent->mServerIPAddress,pParent->mClientSocket);
 
 		//Received a packet from the ip pool. It is placed in the pIncomingBuffer.
 
