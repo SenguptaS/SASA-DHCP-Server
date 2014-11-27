@@ -14,6 +14,7 @@
 
 IPPool::IPPool(Settings lSettings) :
 		mDatabaseConnection(lSettings) {
+	this->InitializePool();
 
 }
 
@@ -153,7 +154,7 @@ int IPPool::ReleaseIP(std::string lIPAddress) {
 
 int IPPool::SetIPAddressState(std::string lIPAddress, bool lInUse) {
 	std::ostringstream lOss;
-	lOss << "UPDATE `ip_pool` SET `flag` = '" << (lInUse ? "A" : "N") << "'";
+	lOss << "UPDATE `ip_pool` SET `flag` = '" << (lInUse ? "A" : "N") << "' WHERE ip_address = '" << lIPAddress <<"'";
 
 	mDatabaseConnection.setMQuery(lOss.str());
 

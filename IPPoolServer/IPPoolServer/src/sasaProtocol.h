@@ -18,6 +18,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "IPPoolServerConstants.h"
+#include "Utility.h"
 
 using namespace log4cxx;
 using namespace std;
@@ -27,15 +28,15 @@ class sasaProtocol{
 public:
 	sasaProtocol(const Settings& lSettings);
 
-	void setRequestPacket(struct requestPacket* lReqPack);
-	struct responsePacket* getResponsePacket();
+	void setRequestPacket(requestPacket* lReqPack);
+	responsePacket* getResponsePacket();
 	int ipRequestProcessing();
 
 
 private:
 	LoggerPtr mPLogger;
-	struct requestPacket* mReqPack;
-	struct responsePacket* mResPack;
+	requestPacket* mReqPack;
+	responsePacket* mResPack;
 	const Settings& mSettings;
 
 	int copyReqToResFields();
@@ -102,11 +103,13 @@ int sasaProtocol::ipOffer(){
 
 		IpPoolMappings lIpPoolMapping(mSettings);
 		IPPool lIpPool(mSettings);
-		string lIpAddr;
+		string lIpAddr, lSrcHwdAddr;
 		
+		lSrcHwdAddr = Utility::GetPrintableMac(mResPack->mSrcHwAddress);
+
 		LOG4CXX_INFO(mPLogger,"Creating a new ip-mac mapping..");
 
-		if(!(lIpPool.GetNextFreeIP(lIpAddr))){
+		if(lIpPool.GetNextFreeIP(lIpAddr)==0){
 			// getting free ip from the pool
 			LOG4CXX_INFO(mPLogger,"Next free ip received from pool is "<< lIpAddr);
 			in_addr lINAddr;
@@ -114,7 +117,7 @@ int sasaProtocol::ipOffer(){
 			mResPack->mAllocatedIp = lINAddr.s_addr;
 
 			// insert the entry of ip-mac into mapping table
-			if(lIpPoolMapping.insertMapping(mResPack->mSrcHwAddress, lIpAddr)){
+			if(lIpPoolMapping.insertMapping(lSrcHwdAddr, lIpAddr)){
 				LOG4CXX_ERROR(mPLogger,"IP-MAC mapping failed to be created..");
 				return -1;
 			}
@@ -122,7 +125,7 @@ int sasaProtocol::ipOffer(){
 				LOG4CXX_INFO(mPLogger,"IP-MAC mapping successfully created..");
 			}
 
-			mResPack->mOpField = '2';
+			mResPack->mOpField = 2;
 			getOtherConfiguration();
 
 			LOG4CXX_INFO(mPLogger,"IP lease offered successfully!!");
@@ -143,23 +146,24 @@ int sasaProtocol::ipRequest(){
 
 			IpPoolMappings lIpPoolMapping(mSettings);
 			IPPool lIpPool(mSettings);
-			string lIpAddr;
+			string lIpAddr, lSrcHwdaddr;
 			in_addr lInAddr;
 			lInAddr.s_addr = mReqPack->mRequestedIp;
+			lSrcHwdaddr = Utility::GetPrintableMac(mReqPack->mSrcHwAddress);
 
-			LOG4CXX_INFO(mPLogger,"Checking ip-mac mapping in the pool for requested Ip "<< mReqPack->mRequestedIp <<" and MAC "<< mReqPack->mSrcHwAddress);
+			LOG4CXX_INFO(mPLogger,"Checking ip-mac mapping in the pool for requested Ip "<< inet_ntoa(lInAddr) <<" and MAC "<< Utility::GetPrintableMac(mReqPack->mSrcHwAddress));
 
-			if(!(lIpPoolMapping.checkValidity(mReqPack->mSrcHwAddress,inet_ntoa(lInAddr)))){
+			if(!(lIpPoolMapping.checkValidity(lSrcHwdaddr,inet_ntoa(lInAddr)))){
 				LOG4CXX_INFO(mPLogger,"Mapping not found thus offering a new IP from the pool");
 				ipOffer();
 			}
 			else{
 				LOG4CXX_INFO(mPLogger,"Mapping found..");
 				mResPack->mAllocatedIp = mReqPack->mRequestedIp;
-				mResPack->mOpField = '4';
+				mResPack->mOpField = 4;
 				getOtherConfiguration();
 				ipLeaseAcknowlegement();
-				LOG4CXX_INFO(mPLogger,"Acknowledging Ip Assignment "<< inet_ntoa(lInAddr)<<" to client with MAC "<< mReqPack->mSrcHwAddress);
+				LOG4CXX_INFO(mPLogger,"Acknowledging Ip Assignment "<< inet_ntoa(lInAddr)<<" to client with MAC "<<  Utility::GetPrintableMac(mReqPack->mSrcHwAddress));
 			}
 		}
 
@@ -169,11 +173,14 @@ int sasaProtocol::ipRequest(){
 int sasaProtocol::ipRelease(){
 	IpPoolMappings lIpPoolMapping(mSettings);
 	IPPool lIpPool(mSettings);
+	string lSrcHwdAddr;
+
+	lSrcHwdAddr = Utility::GetPrintableMac(mReqPack->mSrcHwAddress);
 
 	if(mReqPack != NULL){
 		in_addr lInAddr;
 		lInAddr.s_addr = mReqPack->mRequestedIp;
-		if(lIpPoolMapping.deleteMapping(mReqPack->mSrcHwAddress, inet_ntoa(lInAddr))){
+		if(lIpPoolMapping.deleteMapping(lSrcHwdAddr, inet_ntoa(lInAddr))){
 			LOG4CXX_ERROR(mPLogger,"IP-MAC mapping could not be deleted");
 			return -1;
 		}
@@ -198,13 +205,17 @@ int sasaProtocol::ipLeaseAcknowlegement(){
 	if(mReqPack != NULL){
 		if((mReqPack->mSrcHwAddress != NULL) && (mReqPack->mRequestedIp != 0)){
 			in_addr lInAddr;
+			string lSrcHwdAddr;
+
+			lSrcHwdAddr = Utility::GetPrintableMac(mReqPack->mSrcHwAddress);
+
 			lInAddr.s_addr = mReqPack->mRequestedIp;
-			if(lIpPoolMapping.setBindingFlag(mReqPack->mSrcHwAddress, inet_ntoa(lInAddr))){
-				LOG4CXX_ERROR(mPLogger,"Binding failed corresponding to IP "<< inet_ntoa(lInAddr)<<" and MAC "<< mReqPack->mSrcHwAddress);
+			if(lIpPoolMapping.setBindingFlag(lSrcHwdAddr, inet_ntoa(lInAddr))){
+				LOG4CXX_ERROR(mPLogger,"Binding failed corresponding to IP "<< inet_ntoa(lInAddr)<<" and MAC "<<  Utility::GetPrintableMac(mReqPack->mSrcHwAddress));
 				return -1;
 			}
 			else{
-				LOG4CXX_INFO(mPLogger,"Binding successful corresponding to IP "<< inet_ntoa(lInAddr)<<" and MAC "<< mReqPack->mSrcHwAddress);
+				LOG4CXX_INFO(mPLogger,"Binding successful corresponding to IP "<< inet_ntoa(lInAddr)<<" and MAC "<<  Utility::GetPrintableMac(mReqPack->mSrcHwAddress));
 
 			}
 		}
@@ -216,7 +227,7 @@ int sasaProtocol::otherConfigurationReq(){
 	if(copyReqToResFields() == 0){
 		in_addr lInAddr;
 		lInAddr.s_addr = mReqPack->mRequestedIp;
-		mResPack->mOpField = '5';
+		mResPack->mOpField = 5;
 		mResPack->mRequestId = mReqPack->mRequestedIp;
 		getOtherConfiguration();
 		LOG4CXX_INFO(mPLogger,"Configurations gathered for IP "<< inet_ntoa(lInAddr));
@@ -227,11 +238,11 @@ int sasaProtocol::otherConfigurationReq(){
 	return 0;
 }
 
-void sasaProtocol::setRequestPacket(struct requestPacket* lRespack){
+void sasaProtocol::setRequestPacket(requestPacket* lRespack){
 	this->mReqPack = lRespack;
 }
 
-struct responsePacket* sasaProtocol::getResponsePacket(){
+responsePacket* sasaProtocol::getResponsePacket(){
 	return this->mResPack;
 }
 
@@ -242,24 +253,24 @@ int sasaProtocol::ipRequestProcessing(){
 		lOpcode = mReqPack->mOpField;
 
 		switch(lOpcode){
-		case '1':
+		case 1:
 			// Request for new / old Ip
 			if(mReqPack->mRequestedIp == 0)
 				ipOffer();
 			else
 				ipRequest();
 			break;
-		case '2':
+		case 2:
 			// opcode used for new IP Lease offer
 			break;
-		case '3':
+		case 3:
 			// release ip request received
 			ipRelease();
 			break;
-		case '4':
+		case 4:
 			// opcode used for acknowledgment
 			break;
-		case '5':
+		case 5:
 			otherConfigurationReq();
 			break;
 		}

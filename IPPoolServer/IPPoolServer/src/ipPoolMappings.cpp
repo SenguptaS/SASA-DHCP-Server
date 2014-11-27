@@ -25,15 +25,15 @@ int IpPoolMappings::insertMapping(string lMacAddress, string lIpAddress) {
 	ostringstream lStrStream;
 	lStrStream.str("");
 
-	lStrStream << "INSERT INTO ip_mapping (mac_address, ip_address, lease_time) VALUES ('" << inet_ntoa(lInAddr)
-			<< "', '" << lMacAddress << "', "<< mSettings.mLeaseTime << ");";
+	lStrStream << "INSERT INTO ip_mapping (mac_address, ip_address, lease_time) VALUES ('" << lMacAddress
+			<< "', '" << inet_ntoa(lInAddr) << "', "<< mSettings.mLeaseTime << ");";
 
 	mDbConnection.setMQuery(lStrStream.str());
 	int lResult = mDbConnection.fireQuery();
 
 	if (lResult < 0) {
 		LOG4CXX_ERROR(mPLogger,
-				"Failed to insert IP-MAC mapping with IP= "<< inet_ntoa(lInAddr)<<" and MAC= "<<lMacAddress);
+				"Failed to insert IP-MAC mapping with IP= "<< inet_ntoa(lInAddr)<<" and MAC= "<<  lMacAddress);
 		return -1;
 	}
 
