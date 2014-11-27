@@ -45,7 +45,7 @@ void *SocketThread(void *pArguments) {
 		lSasaProtocol.ipRequestProcessing();
 		responsePacket* pResPacket;
 		pResPacket = lSasaProtocol.getResponsePacket();
-		lBytesSent = send(pThreadPassable->mClientSocket,(void*) &pResPacket,sizeof(responsePacket),0);
+		lBytesSent = send(pThreadPassable->mClientSocket,(void*) pResPacket, sizeof(responsePacket),0);
 
 		if(lBytesSent < 0) {
 			LOG4CXX_ERROR(pLogger,"Failed to send response packet to client "
@@ -139,6 +139,10 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
+	else{
+
+
+	}
 	//===================================================
 
 	lSocketFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -185,6 +189,7 @@ int main(int argc, char *argv[]) {
 				pThreadPassable->mClientSocket = lNewSocketFd;
 				pThreadPassable->mClientIP = lClientAddr;
 
+				pthread_attr_init(&lThreadAttr);
 				int ThreadRetval = pthread_create(&lNewThread,&lThreadAttr,SocketThread,pThreadPassable);
 				if(ThreadRetval)
 				{
