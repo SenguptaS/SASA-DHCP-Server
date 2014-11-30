@@ -18,7 +18,7 @@ public:
 			std::string nInterfaceIpAddress, int nUDPSocket);
 	virtual ~PoolResponse();
 	int ProcessIPOffer(SASA_responsePacket* pResponsePacket,std::string nInterfaceIpAddress, int nUDPSocket);
-
+	int SendACK(SASA_responsePacket* pResponsePacket,std::string nInterfaceIpAddress, int nUDPSocket);
 private:
 	log4cxx::LoggerPtr pLogger;
 	unsigned short lServerIdentifier;

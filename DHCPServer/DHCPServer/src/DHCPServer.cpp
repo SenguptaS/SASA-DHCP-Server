@@ -25,7 +25,7 @@
 using namespace std;
 
 enum REQUEST_TYPE {
-	DHCP_DISCOVER = 1, DHCP_OFFER = 2, DHCP_REQUEST = 3, DHCP_NACK = 4
+	DHCP_DISCOVER = 1, DHCP_OFFER = 2, DHCP_REQUEST = 3, DHCP_NACK = 4, DHCP_RELEASE = 5
 };
 
 std::string lServerName;
@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
-	PoolResponse lPoolResponse(lServerIdentifier, lIpServer, lServerUDPSocket);
+	PoolResponse lPoolResponse(lServerIdentifier, lInterfaceAddress, lServerUDPSocket);
 
 	//Start the ip pool sever communicator
 	IPPoolServerCommunicator ipsc(lIpServer,
@@ -267,9 +267,16 @@ int main(int argc, char* argv[]) {
 				ipsc.getIpLease(lClientMacAddress, lPreviousIPAddress,
 						pDiscoverPacket->mTransactionId);
 			} else if (lReqType == DHCP_REQUEST) {
-				ipsc.confirmIp(lClientMacAddress, lPreviousIPAddress);
-			} else if (lReqType == DHCP_NACK) {
-				ipsc.releaseIp(lClientMacAddress, lPreviousIPAddress);
+				ipsc.confirmIp(lClientMacAddress, lPreviousIPAddress, pDiscoverPacket->mTransactionId);
+			}
+			else if (lReqType == DHCP_RELEASE)
+			{
+				ipsc.releaseIp(lClientMacAddress, lPreviousIPAddress,pDiscoverPacket->mTransactionId);
+
+			}
+			else if (lReqType == DHCP_NACK) {
+				ipsc.releaseIp(lClientMacAddress, lPreviousIPAddress, pDiscoverPacket->mTransactionId);
+
 			}
 
 		}

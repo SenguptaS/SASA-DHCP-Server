@@ -30,7 +30,8 @@
 #include "sasaPackets.h"
 
 IPPoolServerCommunicator::IPPoolServerCommunicator(std::string lServerIPAddress,
-		int lServerPort, unsigned short lServerIdentifer,PoolResponse *pResponse) {
+		int lServerPort, unsigned short lServerIdentifer,
+		PoolResponse *pResponse) {
 
 	mServerIPAddress = lServerIPAddress;
 	mServerPort = lServerPort;
@@ -70,7 +71,15 @@ int IPPoolServerCommunicator::getIpLease(std::string mac,
 
 	RequestPacketPS r;
 	in_addr addr;
-	inet_aton(previousIp.c_str(), &addr);
+	if(previousIp.length() < 6)
+	{
+		addr.s_addr = 0;
+	}
+	else
+	{
+		inet_aton(previousIp.c_str(), &addr);
+	}
+
 	memcpy(r.mSourceHardwareAddress, mac.c_str(), 6);
 	r.mOpField = 1;
 	r.mRequestId = transactionId;
@@ -80,58 +89,86 @@ int IPPoolServerCommunicator::getIpLease(std::string mac,
 	r.mProtocolType = 4;
 
 	//Send the packet to the IP Pool server and recv a response
-	int bSent = send(this->mClientSocket,&r,sizeof(RequestPacketPS),0);
-	if(bSent < 0)
-	{
-		LOG4CXX_ERROR(pLogger,"Fai led sending request to IP Pool server " << strerror(errno));
+	int bSent = send(this->mClientSocket, &r, sizeof(RequestPacketPS), 0);
+	if (bSent < 0) {
+		LOG4CXX_ERROR(pLogger,
+				"Failed sending request to IP Pool server " << strerror(errno));
 		return 0;
-	}
-	else
-	{
-		LOG4CXX_ERROR(pLogger,"Sent request to ip pool");
+	} else {
+		LOG4CXX_ERROR(pLogger, "Sent request to ip pool");
 		return 1;
 	}
 
 	return 0;
 }
 
-int IPPoolServerCommunicator::confirmIp(std::string mac, std::string ip) {
+int IPPoolServerCommunicator::confirmIp(std::string mac, std::string ip,unsigned int ltransactionID) {
 
 	RequestPacketPS r;
 	in_addr addr;
-	inet_aton(ip.c_str(), &addr);
+	if(ip.length() < 6)
+	{
+		addr.s_addr = 0;
+	}
+	else
+	{
+		inet_aton(ip.c_str(), &addr);
+	}
+
 	memcpy(r.mSourceHardwareAddress, mac.c_str(), 6);
-	r.mOpField = 2;
-	r.mRequestId = 0;
+	r.mOpField = 3;
+	r.mRequestId = ltransactionID;
 	r.mPreviousIP = addr.s_addr;
 	r.mChecksum = 0;
 	r.mServerId = mServerIdentifier;
 	r.mProtocolType = 4;
 
+	//Send the packet to the IP Pool server and recv a response
+	int bSent = send(this->mClientSocket, &r, sizeof(RequestPacketPS), 0);
+	if (bSent < 0) {
+		LOG4CXX_ERROR(pLogger,
+				"Failed sending request to IP Pool server " << strerror(errno));
+		return 0;
+	} else {
+		LOG4CXX_ERROR(pLogger, "Sent IP confirmation to pool");
+		return 1;
+	}
+
 	return 0;
 }
 
-int IPPoolServerCommunicator::releaseIp(std::string mac, std::string ip) {
+int IPPoolServerCommunicator::releaseIp(std::string mac, std::string ip,unsigned int transactionID) {
 
 	RequestPacketPS r;
 	in_addr addr;
 	inet_aton(ip.c_str(), &addr);
 	memcpy(r.mSourceHardwareAddress, mac.c_str(), 6);
 	r.mOpField = 3;
-	r.mRequestId = 0;
+	r.mRequestId = transactionID;
 	r.mPreviousIP = addr.s_addr;
 	r.mChecksum = 0;
 	r.mServerId = mServerIdentifier;
 	r.mProtocolType = 4;
 
-	return 0;
+	//Send the packet to the IP Pool server and recv a response
+	int bSent = send(this->mClientSocket, &r, sizeof(RequestPacketPS), 0);
+	if (bSent < 0) {
+		LOG4CXX_ERROR(pLogger,
+				"Failed sending request to IP Pool server " << strerror(errno));
+		return 0;
+	} else {
+		LOG4CXX_ERROR(pLogger, "Sent IP Release to pool");
+		return 1;
+	}
 
+	return 0;
 }
 
 void* IPPoolServerCommunicator::ResponseCommunicatorThread(void *pParams) {
 	IPPoolServerCommunicator* pParent = (IPPoolServerCommunicator*) pParams;
 	char pIncomingPacketBuffer[1024];
-	log4cxx::LoggerPtr lLogger = log4cxx::Logger::getLogger("ResponseCommunicatorThread");
+	log4cxx::LoggerPtr lLogger = log4cxx::Logger::getLogger(
+			"ResponseCommunicatorThread");
 	while (pParent->mRun) {
 
 		pParent->mClientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -161,13 +198,12 @@ void* IPPoolServerCommunicator::ResponseCommunicatorThread(void *pParams) {
 			continue;
 		}
 
-		LOG4CXX_ERROR(lLogger,
-				"Connected to the ip pool server successfully");
+		LOG4CXX_ERROR(lLogger, "Connected to the ip pool server successfully");
 
 		while (true) {
-			memset(pIncomingPacketBuffer,0x00,1024);
+			memset(pIncomingPacketBuffer, 0x00, 1024);
 			int nOBytesRecd = recv(pParent->mClientSocket,
-					pIncomingPacketBuffer , sizeof(SASA_responsePacket), 0);
+					pIncomingPacketBuffer, sizeof(SASA_responsePacket), 0);
 
 			if (nOBytesRecd == 0) {
 				LOG4CXX_ERROR(lLogger,
@@ -176,18 +212,25 @@ void* IPPoolServerCommunicator::ResponseCommunicatorThread(void *pParams) {
 			}
 
 			if (nOBytesRecd < 0) {
-				LOG4CXX_ERROR(lLogger,
-						"Connection error - " << strerror(errno));
+				LOG4CXX_ERROR(lLogger, "Connection error - " << strerror(errno));
 				break;
 			}
 
 			SASA_responsePacket *pPoolResponsePacket =
 					(SASA_responsePacket *) pIncomingPacketBuffer;
-			pParent->mpResponse->ProcessIPOffer(pPoolResponsePacket,pParent->mServerIPAddress,pParent->mClientSocket);
+			if(pPoolResponsePacket->mOpField == 2)
+			{
+			pParent->mpResponse->ProcessIPOffer(pPoolResponsePacket,
+					pParent->mServerIPAddress, pParent->mClientSocket);
+			}
+			else if(pPoolResponsePacket->mOpField == 4)
+			{
+					pParent->mpResponse->SendACK(pPoolResponsePacket,pParent->mServerIPAddress,pParent->mClientSocket);
+			}
 
-		//Received a packet from the ip pool. It is placed in the pIncomingBuffer.
+			//Received a packet from the ip pool. It is placed in the pIncomingBuffer.
 
+		}
 	}
-}
-return NULL;
+	return NULL;
 }
