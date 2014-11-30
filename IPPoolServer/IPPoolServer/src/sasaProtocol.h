@@ -64,7 +64,7 @@ int sasaProtocol::copyReqToResFields(){
 	else{
 		mResPack->mProtocolType = mReqPack->mProtocolType;
 		mResPack->mServerId = mReqPack->mServerId;
-		for(int i=1; i<= HWD_LENGTH; i++)
+		for(int i=0; i< HWD_LENGTH; i++)
 			mResPack->mSrcHwAddress[i] = mReqPack->mSrcHwAddress[i];
 		mResPack->mRequestId = mReqPack->mRequestId;
 		LOG4CXX_INFO(mPLogger,"Copied required fields in response packet from request packet");
@@ -105,9 +105,9 @@ int sasaProtocol::ipOffer(){
 		IPPool lIpPool(mSettings);
 		string lIpAddr, lSrcHwdAddr;
 		
-		lSrcHwdAddr = Utility::GetPrintableMac(mResPack->mSrcHwAddress);
+		lSrcHwdAddr = Utility::GetPrintableMac(this->mReqPack->mSrcHwAddress);
 
-		LOG4CXX_INFO(mPLogger,"Creating a new ip-mac mapping..");
+		LOG4CXX_INFO(mPLogger,"Creating a new ip-mac mapping");
 
 		if(lIpPool.GetNextFreeIP(lIpAddr)==0){
 			// getting free ip from the pool
@@ -155,7 +155,7 @@ int sasaProtocol::ipRequest(){
 
 			if(!(lIpPoolMapping.checkValidity(lSrcHwdaddr,inet_ntoa(lInAddr)))){
 				LOG4CXX_INFO(mPLogger,"Mapping not found thus offering a new IP from the pool");
-				ipOffer();
+				this->ipOffer();
 			}
 			else{
 				LOG4CXX_INFO(mPLogger,"Mapping found..");
@@ -227,7 +227,7 @@ int sasaProtocol::otherConfigurationReq(){
 	if(copyReqToResFields() == 0){
 		in_addr lInAddr;
 		lInAddr.s_addr = mReqPack->mRequestedIp;
-		mResPack->mOpField = 5;
+		mResPack->mOpField = 6;
 		mResPack->mRequestId = mReqPack->mRequestedIp;
 		getOtherConfiguration();
 		LOG4CXX_INFO(mPLogger,"Configurations gathered for IP "<< inet_ntoa(lInAddr));
@@ -238,8 +238,8 @@ int sasaProtocol::otherConfigurationReq(){
 	return 0;
 }
 
-void sasaProtocol::setRequestPacket(requestPacket* lRespack){
-	this->mReqPack = lRespack;
+void sasaProtocol::setRequestPacket(requestPacket* lReqpack){
+	this->mReqPack = lReqpack;
 }
 
 responsePacket* sasaProtocol::getResponsePacket(){
@@ -255,22 +255,25 @@ int sasaProtocol::ipRequestProcessing(){
 		switch(lOpcode){
 		case 1:
 			// Request for new / old Ip
-			if(mReqPack->mRequestedIp == 0)
-				ipOffer();
-			else
-				ipRequest();
+			//if(mReqPack->mRequestedIp == 0)
+			ipOffer();
+			//else
+				//ipRequest();
 			break;
 		case 2:
 			// opcode used for new IP Lease offer
 			break;
 		case 3:
-			// release ip request received
-			ipRelease();
+			ipRequest();
 			break;
 		case 4:
 			// opcode used for acknowledgment
 			break;
 		case 5:
+			// release ip request received
+			ipRelease();
+			break;
+		case 6:
 			otherConfigurationReq();
 			break;
 		}
