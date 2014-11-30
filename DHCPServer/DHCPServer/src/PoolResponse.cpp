@@ -63,18 +63,25 @@ int PoolResponse::ProcessIPOffer(SASA_responsePacket* pResponsePacket,
 	*(pOptionsPtr+2) = 0x02;
 	pOptionsPtr += 3;
 
+	unsigned int lLeaseTime, lSubnetMask;
+
+	lLeaseTime = pResponsePacket->mAllocationValidTime;
+	lLeaseTime = htonl(lLeaseTime);
+
+	lSubnetMask = pResponsePacket->mSubnetMask;
+	//lSubnetMask = htonl(lSubnetMask);
 
 	pOPHeader = (OPHeader*) pOptionsPtr;
 	pOPHeader->OPCode = 51;
 	pOPHeader->OPLength = 4;
-	memcpy((pOPHeader + 2),
-			(const char*) &pResponsePacket->mAllocationValidTime, 4);
+	memcpy((void*)(pOptionsPtr + 2),
+			(const void*) &lLeaseTime, 4);
 	pOptionsPtr += 4 + 2;
 
 	pOPHeader = (OPHeader*) pOptionsPtr;
 	pOPHeader->OPCode = 1;
 	pOPHeader->OPLength = 4;
-	memcpy((pOPHeader + 2), (const char*) &pResponsePacket->mSubnetMask, 4);
+	memcpy((void*)(pOptionsPtr + 2), (const void*) &lSubnetMask, 4);
 	pOptionsPtr += 2 + 4;
 
 	pOPHeader = (OPHeader*) pOptionsPtr;
