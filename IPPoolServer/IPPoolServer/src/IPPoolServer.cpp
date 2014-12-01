@@ -45,14 +45,16 @@ void *SocketThread(void *pArguments) {
 		lSasaProtocol.ipRequestProcessing();
 		responsePacket* pResPacket;
 		pResPacket = lSasaProtocol.getResponsePacket();
-		lBytesSent = send(pThreadPassable->mClientSocket,(void*) pResPacket, sizeof(responsePacket),0);
 
-		if(lBytesSent < 0) {
-			LOG4CXX_ERROR(pLogger,"Failed to send response packet to client "
-					<< inet_ntoa(pThreadPassable->mClientIP.sin_addr)
-					<< " - " << strerror((int)errno));
+		if(pResPacket != NULL){
+			lBytesSent = send(pThreadPassable->mClientSocket,(void*) pResPacket, sizeof(responsePacket),0);
+
+			if(lBytesSent < 0) {
+				LOG4CXX_ERROR(pLogger,"Failed to send response packet to client "
+						<< inet_ntoa(pThreadPassable->mClientIP.sin_addr)
+						<< " - " << strerror((int)errno));
+			}
 		}
-
 	}
 
 	delete pThreadPassable;
