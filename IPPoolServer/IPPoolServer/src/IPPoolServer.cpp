@@ -109,15 +109,32 @@ int main(int argc, char *argv[]) {
 	lPool.InitializePool();
 	bool isCleanStart = false;
 
-	lDBConn.setMQuery("SELECT count(*) FROM ip_mapping");
+	lDBConn.setMQuery("SELECT * FROM ip_mapping");
+	int lResult = lDBConn.fireQuery();
+	StoreQueryResult sqr;
 
-	StoreQueryResult sqr = lDBConn.getMResult();
+	if(lResult==0)
+		sqr = lDBConn.getMResult();
+	else{
+		LOG4CXX_ERROR(pLogger,
+							"Failed to detect clean/ unclean startup of the server. Server shutting down.");
+		return EXIT_FAILURE;
+	}
 
-	if (sqr == NULL || sqr.num_rows() <= 0) {
+
+//	if (sqr == NULL || sqr.num_rows() <= 0) {
+//		LOG4CXX_INFO(pLogger, "Detected clean start");
+//		isCleanStart = true;
+//	} else {
+//		isCleanStart = false;
+//	}
+
+	if(sqr.num_rows() > 0){
+		isCleanStart = false;
+	}
+	else{
 		LOG4CXX_INFO(pLogger, "Detected clean start");
 		isCleanStart = true;
-	} else {
-		isCleanStart = false;
 	}
 
 	if (isCleanStart) {
