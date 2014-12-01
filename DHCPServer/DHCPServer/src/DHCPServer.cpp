@@ -25,7 +25,12 @@
 using namespace std;
 
 enum REQUEST_TYPE {
-	DHCP_DISCOVER = 1, DHCP_OFFER = 2, DHCP_REQUEST = 3, DHCP_NACK = 4, DHCP_RELEASE = 5
+	DHCP_DISCOVER = 1,
+	DHCP_OFFER = 2,
+	DHCP_REQUEST = 3,
+	DHCP_NACK = 4,
+	DHCP_RELEASE = 5,
+	DHCP_INFO_REQUEST = 6
 };
 
 std::string lServerName;
@@ -90,11 +95,12 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
-	int optVal =1;
-	optVal = setsockopt(lServerUDPSocket,SOL_SOCKET,SO_BROADCAST,&optVal,sizeof(int));
-	if(optVal <0)
-	{
-		LOG4CXX_FATAL(pLogger,"Failed to set socket broadcast flag - " << strerror(errno));
+	int optVal = 1;
+	optVal = setsockopt(lServerUDPSocket, SOL_SOCKET, SO_BROADCAST, &optVal,
+			sizeof(int));
+	if (optVal < 0) {
+		LOG4CXX_FATAL(pLogger,
+				"Failed to set socket broadcast flag - " << strerror(errno));
 		return EXIT_FAILURE;
 	}
 
@@ -110,7 +116,8 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
-	PoolResponse lPoolResponse(lServerIdentifier, lInterfaceAddress, lServerUDPSocket);
+	PoolResponse lPoolResponse(lServerIdentifier, lInterfaceAddress,
+			lServerUDPSocket);
 
 	//Start the ip pool sever communicator
 	IPPoolServerCommunicator ipsc(lIpServer,
@@ -132,6 +139,8 @@ int main(int argc, char* argv[]) {
 		int lSizeOfPacketRecvd = recvfrom(lServerUDPSocket, buffer, 1024, 0,
 				(struct sockaddr*) &SocketAddr, &lSizeOfStructure);
 
+		std::string lServerIdentifierStr ="";
+
 		if (lSizeOfPacketRecvd < 0) {
 			LOG4CXX_FATAL(pLogger,
 					"Failed to recv packet - " << strerror(errno));
@@ -144,9 +153,13 @@ int main(int argc, char* argv[]) {
 			LOG4CXX_INFO(pLogger,
 					"Recvd a udp packet of length: " << lSizeOfPacketRecvd);
 
-			for (int lCtr = 0; lCtr < lSizeOfPacketRecvd; lCtr++) {
-				printf("0x%02X ", buffer[lCtr]);
-			}
+//			for (int lCtr = 0; lCtr < lSizeOfPacketRecvd; lCtr++) {
+//				printf("0x%02X ", buffer[lCtr]);
+//			}
+
+			char lClientMac[6];
+			memset(lClientMac, 0x00, 6);
+			bool GotMac = false;
 
 			pDiscoverPacket = (DiscoverPacket*) buffer;
 
@@ -160,7 +173,7 @@ int main(int argc, char* argv[]) {
 
 				if (pDiscoverPacket->mServerAddress == 0) {
 					LOG4CXX_INFO(pLogger,
-							" DHCP Discover - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : " << Utility::GetPrintableMac(pDiscoverPacket->mClientHardwareAddress) );
+							" DHCP Discover - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : " << Utility::GetPrintableMac(pDiscoverPacket->mClientHardwareAddress));
 
 				} else {
 					LOG4CXX_INFO(pLogger,
@@ -170,7 +183,7 @@ int main(int argc, char* argv[]) {
 
 			else if (pDiscoverPacket->mOpField == 2) {
 				LOG4CXX_INFO(pLogger,
-						" DHCP ACK - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : "<< Utility::GetPrintableMac(pDiscoverPacket->mClientHardwareAddress) );
+						" DHCP ACK - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : "<< Utility::GetPrintableMac(pDiscoverPacket->mClientHardwareAddress));
 			}
 
 			while (bConsumed < bLeft) {
@@ -216,19 +229,24 @@ int main(int argc, char* argv[]) {
 
 						LOG4CXX_INFO(pLogger, " Value(6): DHCPNACK");
 					} else if (bData == 7) {
-
+						lReqType = DHCP_RELEASE;
 						LOG4CXX_INFO(pLogger, " Value(7): DHCPRELEASE");
+					} else if (bData == 8) {
+						lReqType = DHCP_RELEASE;
+						LOG4CXX_INFO(pLogger, " Value(8): DHCP RELEASE");
 					}
 
 					else {
 
 						LOG4CXX_ERROR(pLogger, " UNKNOWN DHCP OPTION ");
 					}
+				} else if (bOption == 54) {
+					sockaddr_in lServerIdentifier;
+					memcpy((void*) &lServerIdentifier, (void*)*(pOptionsPtr+2),sizeof(sockaddr_in));
+					lServerIdentifierStr.assign(inet_ntoa(lServerIdentifier.sin_addr));
 				}
-
 				else if (bOption == 61) {
 					char bType = *(pOptionsPtr + 2);
-					char lClientMac[6];
 
 					if (bType != 0x01) {
 						LOG4CXX_ERROR(pLogger,
@@ -237,7 +255,8 @@ int main(int argc, char* argv[]) {
 					}
 
 					memcpy(lClientMac, (const void*) (pOptionsPtr + 3), 6);
-					lClientMacAddress.assign(lClientMac);
+//					lClientMacAddress.assign(lClientMac);
+					GotMac = true;
 
 				} else if (bOption == 50) {
 
@@ -249,9 +268,7 @@ int main(int argc, char* argv[]) {
 
 					lPreviousIPAddress.assign(
 							inet_ntoa(lClientRequestedIP.sin_addr));
-
 				}
-
 				else if (bOption == 12) {
 					char lClientDomainName[64];
 					memcpy((void*) lClientDomainName, (pOptionsPtr + 2), bLen);
@@ -263,20 +280,32 @@ int main(int argc, char* argv[]) {
 				pOptionsPtr += 2 + bLen;
 			}
 
+			if (!GotMac) {
+				//Hack for systems not sending DHCP Option 61
+				memcpy(lClientMac, pDiscoverPacket->mClientHardwareAddress, 6);
+			}
+
+			if(lServerIdentifierStr.compare(lInterfaceAddress) ==0)
+			{
+
 			if (lReqType == DHCP_DISCOVER) {
-				ipsc.getIpLease(lClientMacAddress, lPreviousIPAddress,
+				ipsc.getIpLease(lClientMac, lPreviousIPAddress,
 						pDiscoverPacket->mTransactionId);
 			} else if (lReqType == DHCP_REQUEST) {
-				ipsc.confirmIp(lClientMacAddress, lPreviousIPAddress, pDiscoverPacket->mTransactionId);
+				ipsc.confirmIp(lClientMac, lPreviousIPAddress,
+						pDiscoverPacket->mTransactionId);
+			} else if (lReqType == DHCP_RELEASE) {
+				ipsc.releaseIp(lClientMac, lPreviousIPAddress,
+						pDiscoverPacket->mTransactionId);
+			} else if (lReqType == DHCP_NACK) {
+				ipsc.releaseIp(lClientMac, lPreviousIPAddress,
+						pDiscoverPacket->mTransactionId);
+			} else if (lReqType == DHCP_INFO_REQUEST) {
+				ipsc.InfoRequest(lClientMac, lPreviousIPAddress,
+						pDiscoverPacket->mTransactionId);
 			}
-			else if (lReqType == DHCP_RELEASE)
-			{
-				ipsc.releaseIp(lClientMacAddress, lPreviousIPAddress,pDiscoverPacket->mTransactionId);
-
-			}
-			else if (lReqType == DHCP_NACK) {
-				ipsc.releaseIp(lClientMacAddress, lPreviousIPAddress, pDiscoverPacket->mTransactionId);
-
+			}else {
+				LOG4CXX_ERROR(pLogger,"Discarding the transaction since it is for another server");
 			}
 
 		}

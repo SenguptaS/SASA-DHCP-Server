@@ -34,7 +34,7 @@ int PoolResponse::SendACK(SASA_responsePacket* pResponsePacket,std::string nInte
 	lResponsePacket.mOpField = 0x02;// pResponsePacket->mOpField;
 	memcpy(&lResponsePacket.mClientHardwareAddress,
 			&pResponsePacket->mSrcHwAddress, 6);
-	lResponsePacket.mFlags = 0x0100;
+	lResponsePacket.mFlags = 0x80;
 	lResponsePacket.mTransactionId = pResponsePacket->mRequestId;
 	lResponsePacket.mGatewayAddress = 0x00;// pResponsePacket->mGatewayIp;
 	lResponsePacket.mYourAddress = pResponsePacket->mAllocatedIp;
@@ -128,7 +128,7 @@ int PoolResponse::SendACK(SASA_responsePacket* pResponsePacket,std::string nInte
 	pOPHeader = (OPHeader*) pOptionsPtr;
 	pOPHeader->OPCode = 255;
 	pOPHeader->OPLength = 1;
-	pOptionsPtr += 2;
+	pOptionsPtr += 1;
 
 	lTotalBytes = (pOptionsPtr - buffer);
 
@@ -164,7 +164,7 @@ int PoolResponse::ProcessIPOffer(SASA_responsePacket* pResponsePacket,
 	lResponsePacket.mOpField = pResponsePacket->mOpField;
 	memcpy(&lResponsePacket.mClientHardwareAddress,
 			&pResponsePacket->mSrcHwAddress, 6);
-	lResponsePacket.mFlags = 0x0100;
+	lResponsePacket.mFlags = 0x80;
 	lResponsePacket.mTransactionId = pResponsePacket->mRequestId;
 	lResponsePacket.mGatewayAddress = 0x00;// pResponsePacket->mGatewayIp;
 	lResponsePacket.mYourAddress = pResponsePacket->mAllocatedIp;
@@ -258,7 +258,7 @@ int PoolResponse::ProcessIPOffer(SASA_responsePacket* pResponsePacket,
 	pOPHeader = (OPHeader*) pOptionsPtr;
 	pOPHeader->OPCode = 255;
 	pOPHeader->OPLength = 1;
-	pOptionsPtr += 2;
+	pOptionsPtr += 1;
 
 	lTotalBytes = (pOptionsPtr - buffer);
 

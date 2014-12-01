@@ -18,9 +18,10 @@ class IPPoolServerCommunicator {
 public:
 	IPPoolServerCommunicator(std::string lServerIPAddress, int lServerPort,unsigned short lServerIdentifer,PoolResponse *pResponse);
 	virtual ~IPPoolServerCommunicator();
-	int getIpLease(std::string mac, std::string previousIp,unsigned int transactionId);
-	int confirmIp(std::string mac, std::string ip, unsigned int transactionID);
-	int releaseIp(std::string mac, std::string ip, unsigned int transactionID);
+	int getIpLease(char* mac, std::string previousIp,unsigned int transactionId);
+	int confirmIp(char* mac, std::string ip, unsigned int transactionID);
+	int releaseIp(char* mac, std::string ip, unsigned int transactionID);
+	int InfoRequest(char* mac, std::string ip, unsigned int transactionID);
 	int Run();
 	int Stop();
 private:
