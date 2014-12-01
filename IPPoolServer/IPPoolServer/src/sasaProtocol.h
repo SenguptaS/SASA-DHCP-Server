@@ -142,12 +142,15 @@ int sasaProtocol::ipOffer(){
 
 int sasaProtocol::ipRequest(){
 
+	IpPoolMappings lIpPoolMapping(mSettings);
+	IPPool lIpPool(mSettings);
+	string lIpAddr, lSrcHwdaddr;
+	in_addr lInAddr;
+
+	lIpPoolMapping.deleteMappingAsLeaseExpires();
+
 	if(copyReqToResFields() == 0){
 
-			IpPoolMappings lIpPoolMapping(mSettings);
-			IPPool lIpPool(mSettings);
-			string lIpAddr, lSrcHwdaddr;
-			in_addr lInAddr;
 			lInAddr.s_addr = mReqPack->mRequestedIp;
 			lSrcHwdaddr = Utility::GetPrintableMac(mReqPack->mSrcHwAddress);
 
@@ -159,6 +162,7 @@ int sasaProtocol::ipRequest(){
 			}
 			else{
 				LOG4CXX_INFO(mPLogger,"Mapping found..");
+				lIpPoolMapping.updateLease(lSrcHwdaddr,inet_ntoa(lInAddr));
 				mResPack->mAllocatedIp = mReqPack->mRequestedIp;
 				mResPack->mOpField = 4;
 				getOtherConfiguration();
@@ -228,7 +232,7 @@ int sasaProtocol::otherConfigurationReq(){
 		in_addr lInAddr;
 		lInAddr.s_addr = mReqPack->mRequestedIp;
 		mResPack->mOpField = 6;
-		mResPack->mRequestId = mReqPack->mRequestedIp;
+		mResPack->mAllocatedIp = mReqPack->mRequestedIp;
 		getOtherConfiguration();
 		LOG4CXX_INFO(mPLogger,"Configurations gathered for IP "<< inet_ntoa(lInAddr));
 	}
@@ -254,16 +258,14 @@ int sasaProtocol::ipRequestProcessing(){
 
 		switch(lOpcode){
 		case 1:
-			// Request for new / old Ip
-			//if(mReqPack->mRequestedIp == 0)
+			// Request for new Ip
 			ipOffer();
-			//else
-				//ipRequest();
 			break;
 		case 2:
 			// opcode used for new IP Lease offer
 			break;
 		case 3:
+			// Request for old Ip
 			ipRequest();
 			break;
 		case 4:
