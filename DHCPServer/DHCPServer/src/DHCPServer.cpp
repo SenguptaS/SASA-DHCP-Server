@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include "DHCPServerConstants.h"
 #include "Utility.h"
+#include "TransactionIDMapper.h"
+#include "RequestPacketHolder.h"
 
 using namespace std;
 
@@ -41,6 +43,7 @@ std::string lInterfaceAddress;
 int main(int argc, char* argv[]) {
 
 	unsigned int lServerIdentifier = 0;
+	TransactionIDMapper lTransactionIDMapper;
 	//This should work
 	//Initialize the logger from the log.cfg file
 	log4cxx::PropertyConfigurator::configure("config/log.cfg");
@@ -117,7 +120,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	PoolResponse lPoolResponse(lServerIdentifier, lInterfaceAddress,
-			lServerUDPSocket);
+			lServerUDPSocket,&lTransactionIDMapper);
 
 	//Start the ip pool sever communicator
 	IPPoolServerCommunicator ipsc(lIpServer,
@@ -139,7 +142,7 @@ int main(int argc, char* argv[]) {
 		int lSizeOfPacketRecvd = recvfrom(lServerUDPSocket, buffer, 1024, 0,
 				(struct sockaddr*) &SocketAddr, &lSizeOfStructure);
 
-		std::string lServerIdentifierStr ="";
+		std::string lServerIdentifierStr = "";
 
 		if (lSizeOfPacketRecvd < 0) {
 			LOG4CXX_FATAL(pLogger,
@@ -242,10 +245,11 @@ int main(int argc, char* argv[]) {
 					}
 				} else if (bOption == 54) {
 					sockaddr_in lServerIdentifier;
-					memcpy((void*) &lServerIdentifier, (void*)*(pOptionsPtr+2),sizeof(sockaddr_in));
-					lServerIdentifierStr.assign(inet_ntoa(lServerIdentifier.sin_addr));
-				}
-				else if (bOption == 61) {
+					memcpy((void*) &lServerIdentifier,
+							(void*) *(pOptionsPtr + 2), sizeof(sockaddr_in));
+					lServerIdentifierStr.assign(
+							inet_ntoa(lServerIdentifier.sin_addr));
+				} else if (bOption == 61) {
 					char bType = *(pOptionsPtr + 2);
 
 					if (bType != 0x01) {
@@ -268,8 +272,7 @@ int main(int argc, char* argv[]) {
 
 					lPreviousIPAddress.assign(
 							inet_ntoa(lClientRequestedIP.sin_addr));
-				}
-				else if (bOption == 12) {
+				} else if (bOption == 12) {
 					char lClientDomainName[64];
 					memcpy((void*) lClientDomainName, (pOptionsPtr + 2), bLen);
 					lClientDomainName[(int) bLen] = 0x00;
@@ -285,27 +288,36 @@ int main(int argc, char* argv[]) {
 				memcpy(lClientMac, pDiscoverPacket->mClientHardwareAddress, 6);
 			}
 
-			if(lServerIdentifierStr.compare(lInterfaceAddress) ==0)
-			{
+			if (lServerIdentifierStr.compare(lInterfaceAddress) == 0) {
+				RequestPacketHolder* pRequestHolder = lTransactionIDMapper.GetPacketForTransactionID(pDiscoverPacket->mTransactionId);
+				if(pRequestHolder !=NULL )
+				{
+					LOG4CXX_INFO(pLogger,"Duplicate Request for transaction id " << pDiscoverPacket->mTransactionId);
+					continue;
+				}
 
-			if (lReqType == DHCP_DISCOVER) {
-				ipsc.getIpLease(lClientMac, lPreviousIPAddress,
-						pDiscoverPacket->mTransactionId);
-			} else if (lReqType == DHCP_REQUEST) {
-				ipsc.confirmIp(lClientMac, lPreviousIPAddress,
-						pDiscoverPacket->mTransactionId);
-			} else if (lReqType == DHCP_RELEASE) {
-				ipsc.releaseIp(lClientMac, lPreviousIPAddress,
-						pDiscoverPacket->mTransactionId);
-			} else if (lReqType == DHCP_NACK) {
-				ipsc.releaseIp(lClientMac, lPreviousIPAddress,
-						pDiscoverPacket->mTransactionId);
-			} else if (lReqType == DHCP_INFO_REQUEST) {
-				ipsc.InfoRequest(lClientMac, lPreviousIPAddress,
-						pDiscoverPacket->mTransactionId);
-			}
-			}else {
-				LOG4CXX_ERROR(pLogger,"Discarding the transaction since it is for another server");
+				pRequestHolder = new RequestPacketHolder(pDiscoverPacket->mTransactionId,lPreviousIPAddress);
+				lTransactionIDMapper.AddRequestPacketHolder(pRequestHolder);
+
+				if (lReqType == DHCP_DISCOVER) {
+					ipsc.getIpLease(lClientMac, lPreviousIPAddress,
+							pDiscoverPacket->mTransactionId);
+				} else if (lReqType == DHCP_REQUEST) {
+					ipsc.confirmIp(lClientMac, lPreviousIPAddress,
+							pDiscoverPacket->mTransactionId);
+				} else if (lReqType == DHCP_RELEASE) {
+					ipsc.releaseIp(lClientMac, lPreviousIPAddress,
+							pDiscoverPacket->mTransactionId);
+				} else if (lReqType == DHCP_NACK) {
+					ipsc.releaseIp(lClientMac, lPreviousIPAddress,
+							pDiscoverPacket->mTransactionId);
+				} else if (lReqType == DHCP_INFO_REQUEST) {
+					ipsc.InfoRequest(lClientMac, lPreviousIPAddress,
+							pDiscoverPacket->mTransactionId);
+				}
+			} else {
+				LOG4CXX_ERROR(pLogger,
+						"Discarding the transaction since it is for another server");
 			}
 
 		}

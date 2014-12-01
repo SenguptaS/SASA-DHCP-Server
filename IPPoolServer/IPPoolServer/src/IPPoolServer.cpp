@@ -25,6 +25,7 @@
 #include "sasaPackets.h"
 #include "sasaProtocol.h"
 
+
 using namespace std;
 
 void *SocketThread(void *pArguments) {
@@ -67,8 +68,8 @@ int main(int argc, char *argv[]) {
 	char lbuffer[BUFFER_SIZE];
 	struct sockaddr_in lServerAddr;
 	struct sockaddr_in lClientAddr;
-	fd_set lRead_fds;
 	socklen_t lClientAddressSize = sizeof(sockaddr_in);
+
 
 	log4cxx::PropertyConfigurator::configure("log.cfg");
 	log4cxx::LoggerPtr pLogger = log4cxx::Logger::getLogger(ROOT_LOGGER);
