@@ -19,6 +19,7 @@
 #include <arpa/inet.h>
 #include "IPPoolServerConstants.h"
 #include "Utility.h"
+#include "ReservedIpMappings.h"
 
 using namespace log4cxx;
 using namespace std;
@@ -46,6 +47,7 @@ private:
 	int ipLeaseAcknowlegement();
 	int otherConfigurationReq();
 	int getOtherConfiguration();
+	int staticIpOffer();
 
 
 };
@@ -99,44 +101,95 @@ int sasaProtocol::getOtherConfiguration(){
 
 int sasaProtocol::ipOffer(){
 
-	if(copyReqToResFields() == 0){
 
-		IpPoolMappings lIpPoolMapping(mSettings);
-		IPPool lIpPool(mSettings);
-		string lIpAddr, lSrcHwdAddr;
-		
-		lSrcHwdAddr = Utility::GetPrintableMac(this->mReqPack->mSrcHwAddress);
+	IpPoolMappings lIpPoolMapping(mSettings);
+	IPPool lIpPool(mSettings);
+	ReservedIpMappings lReservedIpMappings(mSettings);
+	string lIpAddr, lSrcHwdAddr;
 
-		LOG4CXX_INFO(mPLogger,"Creating a new ip-mac mapping");
 
-		if(lIpPool.GetNextFreeIP(lIpAddr)==0){
-			// getting free ip from the pool
-			LOG4CXX_INFO(mPLogger,"Next free ip received from pool is "<< lIpAddr);
-			in_addr lINAddr;
-			inet_aton(lIpAddr.c_str(),&lINAddr);
-			mResPack->mAllocatedIp = lINAddr.s_addr;
+	lIpPoolMapping.deleteMappingAsLeaseExpires();
 
-			// insert the entry of ip-mac into mapping table
-			if(lIpPoolMapping.insertMapping(lSrcHwdAddr, lIpAddr)){
-				LOG4CXX_ERROR(mPLogger,"IP-MAC mapping failed to be created..");
-				return -1;
+	if(!lReservedIpMappings.isReservedIpAvailable(Utility::GetPrintableMac(this->mReqPack->mSrcHwAddress))){
+		if(copyReqToResFields() == 0){
+
+			lSrcHwdAddr = Utility::GetPrintableMac(this->mReqPack->mSrcHwAddress);
+
+			LOG4CXX_INFO(mPLogger,"Creating a new ip-mac mapping");
+
+			if(lIpPool.GetNextFreeIP(lIpAddr)==0){
+				// getting free ip from the pool
+				LOG4CXX_INFO(mPLogger,"Next free ip received from pool is "<< lIpAddr);
+				in_addr lINAddr;
+				inet_aton(lIpAddr.c_str(),&lINAddr);
+				mResPack->mAllocatedIp = lINAddr.s_addr;
+
+				// insert the entry of ip-mac into mapping table
+				if(lIpPoolMapping.insertMapping(lSrcHwdAddr, lIpAddr)){
+					LOG4CXX_ERROR(mPLogger,"IP-MAC mapping failed to be created..");
+					return -1;
+				}
+				else{
+					LOG4CXX_INFO(mPLogger,"IP-MAC mapping successfully created..");
+				}
+
+				mResPack->mOpField = 2;
+				getOtherConfiguration();
+
+				LOG4CXX_INFO(mPLogger,"IP lease offered successfully!!");
+
 			}
 			else{
-				LOG4CXX_INFO(mPLogger,"IP-MAC mapping successfully created..");
+				LOG4CXX_ERROR(mPLogger, "Failed to get free ip from pool");
+				return -1;
 			}
-
-			mResPack->mOpField = 2;
-			getOtherConfiguration();
-
-			LOG4CXX_INFO(mPLogger,"IP lease offered successfully!!");
-
-		}
-		else{
-			LOG4CXX_ERROR(mPLogger, "Failed to get free ip from pool");
-			return -1;
 		}
 	}
+	else{
+		staticIpOffer();
+	}
+	return 0;
+}
 
+int sasaProtocol::staticIpOffer(){
+	IpPoolMappings lIpPoolMapping(mSettings);
+	IPPool lIpPool(mSettings);
+	ReservedIpMappings lReservedIpMappings(mSettings);
+	string lIpAddr, lSrcHwdAddr;
+
+	lSrcHwdAddr = Utility::GetPrintableMac(this->mReqPack->mSrcHwAddress);
+
+	if(copyReqToResFields() == 0){
+
+			LOG4CXX_INFO(mPLogger,"Creating a new ip-mac mapping");
+
+			if(lReservedIpMappings.getReservedIp(lSrcHwdAddr, lIpAddr)==0){
+				// getting free ip from the pool
+				LOG4CXX_INFO(mPLogger,"Reserved ip for the client with MAC= "<< lSrcHwdAddr<<" is "<< lIpAddr);
+				in_addr lINAddr;
+				inet_aton(lIpAddr.c_str(),&lINAddr);
+				mResPack->mAllocatedIp = lINAddr.s_addr;
+
+				// insert the entry of ip-mac into mapping table
+				if(lIpPoolMapping.insertMapping(lSrcHwdAddr, lIpAddr)){
+					LOG4CXX_ERROR(mPLogger,"IP-MAC mapping failed to be created..");
+					return -1;
+				}
+				else{
+					LOG4CXX_INFO(mPLogger,"IP-MAC mapping successfully created..");
+				}
+
+				mResPack->mOpField = 2;
+				getOtherConfiguration();
+
+				LOG4CXX_INFO(mPLogger,"IP lease offered successfully!!");
+
+			}
+			else{
+				LOG4CXX_ERROR(mPLogger,"Failed to retrieve reserved ip for client with MAC= "<< lSrcHwdAddr);
+				return -1;
+			}
+	}
 	return 0;
 }
 
