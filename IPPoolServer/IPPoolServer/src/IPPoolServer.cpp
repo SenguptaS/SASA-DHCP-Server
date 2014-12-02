@@ -25,6 +25,7 @@
 #include "sasaPackets.h"
 #include "sasaProtocol.h"
 
+
 using namespace std;
 
 void *SocketThread(void *pArguments) {
@@ -33,17 +34,17 @@ void *SocketThread(void *pArguments) {
 
 	ThreadPassable* pThreadPassable =(ThreadPassable*) pArguments;
 	unsigned char lPacketBuffer[1024];
-	sasaProtocol lSasaProtocol(pThreadPassable->mSettings);
-
 	int lRecdBytes =0;
 	int lBytesSent =0;
+	responsePacket* pResPacket;
 
 	while ( lRecdBytes = read(pThreadPassable->mClientSocket,lPacketBuffer,sizeof(requestPacket)))
 	{
+		sasaProtocol lSasaProtocol(pThreadPassable->mSettings);
 		requestPacket* pReqPacket = (requestPacket*) lPacketBuffer;
 		lSasaProtocol.setRequestPacket(pReqPacket);
 		lSasaProtocol.ipRequestProcessing();
-		responsePacket* pResPacket;
+
 		pResPacket = lSasaProtocol.getResponsePacket();
 
 		if(pResPacket != NULL){
@@ -67,8 +68,8 @@ int main(int argc, char *argv[]) {
 	char lbuffer[BUFFER_SIZE];
 	struct sockaddr_in lServerAddr;
 	struct sockaddr_in lClientAddr;
-	fd_set lRead_fds;
 	socklen_t lClientAddressSize = sizeof(sockaddr_in);
+
 
 	log4cxx::PropertyConfigurator::configure("log.cfg");
 	log4cxx::LoggerPtr pLogger = log4cxx::Logger::getLogger(ROOT_LOGGER);
@@ -129,10 +130,11 @@ int main(int argc, char *argv[]) {
 //	}
 
 	if(sqr.num_rows() > 0){
+		LOG4CXX_INFO(pLogger, "Clean startup not detected..starting server with previous state restored");
 		isCleanStart = false;
 	}
 	else{
-		LOG4CXX_INFO(pLogger, "Detected clean start");
+		LOG4CXX_INFO(pLogger, "Detected clean start..starting server in initial state");
 		isCleanStart = true;
 	}
 

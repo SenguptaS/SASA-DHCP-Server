@@ -55,6 +55,9 @@ private:
 
 sasaProtocol::sasaProtocol(const Settings& lSettings)
 	: mSettings(lSettings){
+
+	mReqPack = new requestPacket;
+	mResPack = new responsePacket;
 	mPLogger = Logger::getLogger(ROOT_LOGGER);
 }
 
@@ -106,7 +109,11 @@ int sasaProtocol::ipOffer(){
 	IPPool lIpPool(mSettings);
 	ReservedIpMappings lReservedIpMappings(mSettings);
 	string lIpAddr, lSrcHwdAddr;
+	in_addr lInAddress;
+	int lResult=0;
 
+	lInAddress.s_addr = mReqPack->mRequestedIp;
+	lIpAddr = inet_ntoa(lInAddress);
 
 	lIpPoolMapping.deleteMappingAsLeaseExpires();
 
@@ -117,7 +124,11 @@ int sasaProtocol::ipOffer(){
 
 			LOG4CXX_INFO(mPLogger,"Creating a new ip-mac mapping");
 
-			if(lIpPool.GetNextFreeIP(lIpAddr)==0){
+			if(!lIpPool.isIpAvailable(lIpAddr)){
+				lResult = lIpPool.GetNextFreeIP(lIpAddr);
+			}
+
+			if(lResult==0){
 				// getting free ip from the pool
 				LOG4CXX_INFO(mPLogger,"Next free ip received from pool is "<< lIpAddr);
 				in_addr lINAddr;

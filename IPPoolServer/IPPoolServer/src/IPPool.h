@@ -26,6 +26,7 @@ public:
 	int GetNextFreeIP(std::string& lNextFreeIP);
 	int ReleaseIP(std::string lIPAddress);
 	int SetIPAddressState(std::string lIPAddress, bool lInUse);
+	bool isIpAvailable(std::string lIPAddress);
 
 };
 

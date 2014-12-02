@@ -167,3 +167,34 @@ int IPPool::SetIPAddressState(std::string lIPAddress, bool lInUse) {
 			"Set status of IP Address: " << lIPAddress << " to " << (lInUse?"A":"N"));
 	return 0;
 }
+
+bool IPPool::isIpAvailable(std::string lIPAddress){
+	std::ostringstream lOss;
+	StoreQueryResult lStoreRes;
+	lOss << "SELECT * FROM ip_pool WHERE ip_address= '"<< lIPAddress << "' AND flag='N';";
+
+	mDatabaseConnection.setMQuery(lOss.str());
+
+	if(mDatabaseConnection.fireQuery() < 0){
+		LOG4CXX_ERROR(pLogger,
+						"Failed to check current status of IP "<< lIPAddress);
+		return false;
+	}
+
+	lStoreRes = mDatabaseConnection.getMResult();
+	if(lStoreRes.num_rows()>0){
+		LOG4CXX_INFO(pLogger,"Requested Ip "<< lIPAddress<<" is available..");
+
+		if (this->SetIPAddressState(lIPAddress, true) < 0) {
+			lIPAddress = "";
+			return false;
+		}
+
+		return true;
+	}
+	else{
+		LOG4CXX_INFO(pLogger,"Requested ip "<< lIPAddress<<" is unavailable..");
+		return false;
+	}
+}
+
