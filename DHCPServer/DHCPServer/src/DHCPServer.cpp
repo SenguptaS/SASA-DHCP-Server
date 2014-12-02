@@ -235,8 +235,8 @@ int main(int argc, char* argv[]) {
 						lReqType = DHCP_RELEASE;
 						LOG4CXX_INFO(pLogger, " Value(7): DHCPRELEASE");
 					} else if (bData == 8) {
-						lReqType = DHCP_RELEASE;
-						LOG4CXX_INFO(pLogger, " Value(8): DHCP RELEASE");
+						lReqType = DHCP_INFO_REQUEST;
+						LOG4CXX_INFO(pLogger, " Value(8): DHCP INFORM");
 					}
 
 					else {
@@ -245,8 +245,9 @@ int main(int argc, char* argv[]) {
 					}
 				} else if (bOption == 54) {
 					sockaddr_in lServerIdentifier;
-					memcpy((void*) &lServerIdentifier,
-							(void*) *(pOptionsPtr + 2), sizeof(sockaddr_in));
+
+					memcpy((void*) &(lServerIdentifier.sin_addr.s_addr),
+							(void*) (pOptionsPtr + 2), 4);
 					lServerIdentifierStr.assign(
 							inet_ntoa(lServerIdentifier.sin_addr));
 				} else if (bOption == 61) {
@@ -288,13 +289,16 @@ int main(int argc, char* argv[]) {
 				memcpy(lClientMac, pDiscoverPacket->mClientHardwareAddress, 6);
 			}
 
-			if (lServerIdentifierStr.compare(lInterfaceAddress) == 0) {
+			if (lServerIdentifierStr.compare("") ==0 || lServerIdentifierStr.compare(lInterfaceAddress) == 0) {
 				RequestPacketHolder* pRequestHolder = lTransactionIDMapper.GetPacketForTransactionID(pDiscoverPacket->mTransactionId);
+
 				if(pRequestHolder !=NULL )
 				{
 					LOG4CXX_INFO(pLogger,"Duplicate Request for transaction id " << pDiscoverPacket->mTransactionId);
 					continue;
 				}
+
+				LOG4CXX_INFO(pLogger,"No previous entry found for transaction " << pDiscoverPacket->mTransactionId << " PrevIP:" << lPreviousIPAddress);
 
 				pRequestHolder = new RequestPacketHolder(pDiscoverPacket->mTransactionId,lPreviousIPAddress);
 				lTransactionIDMapper.AddRequestPacketHolder(pRequestHolder);

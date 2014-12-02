@@ -10,7 +10,7 @@
 RequestPacketHolder::RequestPacketHolder(unsigned int nTransactionID,std::string nClientRequestedIP) {
 	// TODO Auto-generated constructor stub
 	this->lTransactionID = nTransactionID;
-	this->lClientRequestedIP = nClientRequestedIP;
+	this->lClientRequestedIP = std::string(nClientRequestedIP);
 }
 
 RequestPacketHolder::~RequestPacketHolder() {

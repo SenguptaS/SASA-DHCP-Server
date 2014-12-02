@@ -19,10 +19,11 @@ TransactionIDMapper::~TransactionIDMapper() {
 }
 
 int TransactionIDMapper::AddRequestPacketHolder(RequestPacketHolder* pHolder) {
+	bool _Success = false;
 	pthread_mutex_lock(&lLock);
-	this->mMap.insert(std::make_pair(pHolder->getTransactionId(), pHolder));
+	_Success = this->mMap.insert(std::make_pair(pHolder->getTransactionId(), pHolder)).second;
 	pthread_mutex_unlock(&lLock);
-	return 1;
+	return _Success;
 }
 
 int TransactionIDMapper::RemovePacketHolder(unsigned int nRequestID) {
@@ -35,7 +36,7 @@ int TransactionIDMapper::RemovePacketHolder(unsigned int nRequestID) {
 RequestPacketHolder* TransactionIDMapper::GetPacketForTransactionID(
 		unsigned int nRequestID) {
 
-	RequestPacketHolder *pPacket = 0x0;
+//	RequestPacketHolder *pPacket = 0x0;
 
 	pthread_mutex_lock(&lLock);
 	std::map<unsigned int,RequestPacketHolder*>::iterator i =  this->mMap.find(nRequestID);
@@ -44,5 +45,5 @@ RequestPacketHolder* TransactionIDMapper::GetPacketForTransactionID(
 	{
 		return 0x00;
 	}
-	return pPacket;
+	return i->second;
 }

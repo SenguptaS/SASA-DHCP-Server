@@ -121,6 +121,15 @@ PoolResponse::PoolResponse(unsigned short nServerIdentifier,
 
 int PoolResponse::SendACK(SASA_responsePacket* pResponsePacket,
 		std::string nInterfaceIpAddress, int nUDPSocket) {
+
+	RequestPacketHolder* pRequestPacket =
+			lpTransactionMapper->GetPacketForTransactionID(
+					pResponsePacket->mRequestId);
+	if (pRequestPacket != NULL) {
+		lpTransactionMapper->RemovePacketHolder(pResponsePacket->mRequestId);
+		delete pRequestPacket;
+	}
+
 	ResponsePacket lResponsePacket;
 	memset(&lResponsePacket, 0, sizeof(ResponsePacket));
 
@@ -260,7 +269,8 @@ int PoolResponse::ProcessIPOffer(SASA_responsePacket* pResponsePacket,
 			lpTransactionMapper->GetPacketForTransactionID(
 					pResponsePacket->mRequestId);
 	if (pRequestPacket != NULL) {
-		if (pRequestPacket->getClientRequestedIp().compare("0.0.0.0") == 0) {
+		if (pRequestPacket->getClientRequestedIp().compare("0.0.0.0") == 0
+				|| pRequestPacket->getClientRequestedIp().compare("") == 0) {
 			lpTransactionMapper->RemovePacketHolder(
 					pResponsePacket->mRequestId);
 			delete pRequestPacket;
@@ -283,7 +293,7 @@ int PoolResponse::ProcessIPOffer(SASA_responsePacket* pResponsePacket,
 				delete pRequestPacket;
 
 				this->SendNAK(pResponsePacket, nInterfaceIpAddress, nUDPSocket);
-				return 0;
+//				return 0;
 			}
 		}
 	}
