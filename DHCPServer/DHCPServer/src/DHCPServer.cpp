@@ -14,18 +14,25 @@
 #include <errno.h>
 #include <string.h>
 #include "DHCPPackets.h"
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "IPPoolServerCommunicator.h"
 #include <sstream>
-#include "DHCPServerConstants.h"
 #include <stdlib.h>
+#include "DHCPServerConstants.h"
+#include "Utility.h"
+#include "TransactionIDMapper.h"
+#include "RequestPacketHolder.h"
 
 using namespace std;
 
 enum REQUEST_TYPE {
-	DHCP_DISCOVER = 1, DHCP_OFFER = 2, DHCP_REQUEST = 3, DHCP_NACK = 4
+	DHCP_DISCOVER = 1,
+	DHCP_OFFER = 2,
+	DHCP_REQUEST = 3,
+	DHCP_NACK = 4,
+	DHCP_RELEASE = 5,
+	DHCP_INFO_REQUEST = 6
 };
 
 std::string lServerName;
@@ -36,7 +43,8 @@ std::string lInterfaceAddress;
 int main(int argc, char* argv[]) {
 
 	unsigned int lServerIdentifier = 0;
-
+	TransactionIDMapper lTransactionIDMapper;
+	//This should work
 	//Initialize the logger from the log.cfg file
 	log4cxx::PropertyConfigurator::configure("config/log.cfg");
 
@@ -82,15 +90,21 @@ int main(int argc, char* argv[]) {
 		x++;
 	}
 
-	//Start the ip pool sever communicator
-	IPPoolServerCommunicator ipsc(lIpServer, strtoul(lServerPort.c_str(),NULL,10)  ,(unsigned short int) lServerIdentifier );
-
 	int lServerUDPSocket = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (lServerUDPSocket < 0) {
 		LOG4CXX_ERROR(pLogger,
 				"Failed to create udp socket - " << strerror(errno));
 		return 0;
+	}
+
+	int optVal = 1;
+	optVal = setsockopt(lServerUDPSocket, SOL_SOCKET, SO_BROADCAST, &optVal,
+			sizeof(int));
+	if (optVal < 0) {
+		LOG4CXX_FATAL(pLogger,
+				"Failed to set socket broadcast flag - " << strerror(errno));
+		return EXIT_FAILURE;
 	}
 
 	struct sockaddr_in SocketAddr;
@@ -104,6 +118,15 @@ int main(int argc, char* argv[]) {
 		LOG4CXX_FATAL(pLogger, " bind failed - " << strerror(errno));
 		return 0;
 	}
+
+	PoolResponse lPoolResponse(lServerIdentifier, lInterfaceAddress,
+			lServerUDPSocket,&lTransactionIDMapper);
+
+	//Start the ip pool sever communicator
+	IPPoolServerCommunicator ipsc(lIpServer,
+			strtoul(lServerPort.c_str(), NULL, 10),
+			(unsigned short int) lServerIdentifier, &lPoolResponse);
+	ipsc.Run();
 
 	// Bind Successful from Port 67
 
@@ -119,6 +142,8 @@ int main(int argc, char* argv[]) {
 		int lSizeOfPacketRecvd = recvfrom(lServerUDPSocket, buffer, 1024, 0,
 				(struct sockaddr*) &SocketAddr, &lSizeOfStructure);
 
+		std::string lServerIdentifierStr = "";
+
 		if (lSizeOfPacketRecvd < 0) {
 			LOG4CXX_FATAL(pLogger,
 					"Failed to recv packet - " << strerror(errno));
@@ -131,9 +156,13 @@ int main(int argc, char* argv[]) {
 			LOG4CXX_INFO(pLogger,
 					"Recvd a udp packet of length: " << lSizeOfPacketRecvd);
 
-			for (int lCtr = 0; lCtr < lSizeOfPacketRecvd; lCtr++) {
-				printf("0x%02X ", buffer[lCtr]);
-			}
+//			for (int lCtr = 0; lCtr < lSizeOfPacketRecvd; lCtr++) {
+//				printf("0x%02X ", buffer[lCtr]);
+//			}
+
+			char lClientMac[6];
+			memset(lClientMac, 0x00, 6);
+			bool GotMac = false;
 
 			pDiscoverPacket = (DiscoverPacket*) buffer;
 
@@ -147,22 +176,24 @@ int main(int argc, char* argv[]) {
 
 				if (pDiscoverPacket->mServerAddress == 0) {
 					LOG4CXX_INFO(pLogger,
-							" DHCP Discover - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : " << (int) pDiscoverPacket ->mClientHardwareAddress[0] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[1] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[2] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[3] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[4] << ":" << (int) pDiscoverPacket ->mClientHardwareAddress[5]);
+							" DHCP Discover - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : " << Utility::GetPrintableMac(pDiscoverPacket->mClientHardwareAddress));
 
 				} else {
 					LOG4CXX_INFO(pLogger,
-							" DHCP Request - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : "<< pDiscoverPacket->mClientHardwareAddress);
+							" DHCP Request - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : "<< Utility::GetPrintableMac(pDiscoverPacket->mClientHardwareAddress));
 				}
 			}
 
 			else if (pDiscoverPacket->mOpField == 2) {
 				LOG4CXX_INFO(pLogger,
-						" DHCP ACK - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : "<< pDiscoverPacket->mClientHardwareAddress);
+						" DHCP ACK - Transaction ID : " <<(int) pDiscoverPacket->mTransactionId <<" ClientAddress :" << pDiscoverPacket->mClientAddress << "ClientHardwareAddress : "<< Utility::GetPrintableMac(pDiscoverPacket->mClientHardwareAddress));
 			}
 
 			while (bConsumed < bLeft) {
 				//Read and process variable length field of the incoming dhcp packet.
 				//Options as mentioned in the  https://tools.ietf.org/html/rfc2132
+				std::string lOss;
+
 				unsigned char bOption = *pOptionsPtr;
 				if (bOption == 0xFF) {
 					LOG4CXX_INFO(pLogger, "End of options variable field");
@@ -201,19 +232,26 @@ int main(int argc, char* argv[]) {
 
 						LOG4CXX_INFO(pLogger, " Value(6): DHCPNACK");
 					} else if (bData == 7) {
-
+						lReqType = DHCP_RELEASE;
 						LOG4CXX_INFO(pLogger, " Value(7): DHCPRELEASE");
+					} else if (bData == 8) {
+						lReqType = DHCP_INFO_REQUEST;
+						LOG4CXX_INFO(pLogger, " Value(8): DHCP INFORM");
 					}
 
 					else {
 
 						LOG4CXX_ERROR(pLogger, " UNKNOWN DHCP OPTION ");
 					}
-				}
+				} else if (bOption == 54) {
+					sockaddr_in lServerIdentifier;
 
-				else if (bOption == 61) {
+					memcpy((void*) &(lServerIdentifier.sin_addr.s_addr),
+							(void*) (pOptionsPtr + 2), 4);
+					lServerIdentifierStr.assign(
+							inet_ntoa(lServerIdentifier.sin_addr));
+				} else if (bOption == 61) {
 					char bType = *(pOptionsPtr + 2);
-					char lClientMac[6];
 
 					if (bType != 0x01) {
 						LOG4CXX_ERROR(pLogger,
@@ -222,7 +260,8 @@ int main(int argc, char* argv[]) {
 					}
 
 					memcpy(lClientMac, (const void*) (pOptionsPtr + 3), 6);
-					lClientMacAddress.assign(lClientMac);
+//					lClientMacAddress.assign(lClientMac);
+					GotMac = true;
 
 				} else if (bOption == 50) {
 
@@ -234,10 +273,7 @@ int main(int argc, char* argv[]) {
 
 					lPreviousIPAddress.assign(
 							inet_ntoa(lClientRequestedIP.sin_addr));
-
-				}
-
-				else if (bOption == 12) {
+				} else if (bOption == 12) {
 					char lClientDomainName[64];
 					memcpy((void*) lClientDomainName, (pOptionsPtr + 2), bLen);
 					lClientDomainName[(int) bLen] = 0x00;
@@ -248,33 +284,63 @@ int main(int argc, char* argv[]) {
 				pOptionsPtr += 2 + bLen;
 			}
 
-			if (lReqType == DHCP_DISCOVER) {
-				ipsc.getIpLease(lClientMacAddress, lPreviousIPAddress,
-						pDiscoverPacket->mTransactionId);
-			} else if (lReqType == DHCP_REQUEST) {
-				ipsc.confirmIp(lClientMacAddress, lPreviousIPAddress);
-			} else if (lReqType == DHCP_NACK) {
-				ipsc.releaseIp(lClientMacAddress, lPreviousIPAddress);
+			if (!GotMac) {
+				//Hack for systems not sending DHCP Option 61
+				memcpy(lClientMac, pDiscoverPacket->mClientHardwareAddress, 6);
+			}
+
+			if (lServerIdentifierStr.compare("") ==0 || lServerIdentifierStr.compare(lInterfaceAddress) == 0) {
+				RequestPacketHolder* pRequestHolder = lTransactionIDMapper.GetPacketForTransactionID(pDiscoverPacket->mTransactionId);
+
+				if(pRequestHolder !=NULL )
+				{
+					LOG4CXX_INFO(pLogger,"Duplicate Request for transaction id " << pDiscoverPacket->mTransactionId);
+					continue;
+				}
+
+				LOG4CXX_INFO(pLogger,"No previous entry found for transaction " << pDiscoverPacket->mTransactionId << " PrevIP:" << lPreviousIPAddress);
+
+				pRequestHolder = new RequestPacketHolder(pDiscoverPacket->mTransactionId,lPreviousIPAddress);
+				lTransactionIDMapper.AddRequestPacketHolder(pRequestHolder);
+
+				if (lReqType == DHCP_DISCOVER) {
+					ipsc.getIpLease(lClientMac, lPreviousIPAddress,
+							pDiscoverPacket->mTransactionId);
+				} else if (lReqType == DHCP_REQUEST) {
+					ipsc.confirmIp(lClientMac, lPreviousIPAddress,
+							pDiscoverPacket->mTransactionId);
+				} else if (lReqType == DHCP_RELEASE) {
+					ipsc.releaseIp(lClientMac, lPreviousIPAddress,
+							pDiscoverPacket->mTransactionId);
+				} else if (lReqType == DHCP_NACK) {
+					ipsc.releaseIp(lClientMac, lPreviousIPAddress,
+							pDiscoverPacket->mTransactionId);
+				} else if (lReqType == DHCP_INFO_REQUEST) {
+					ipsc.InfoRequest(lClientMac, lPreviousIPAddress,
+							pDiscoverPacket->mTransactionId);
+				}
+			} else {
+				LOG4CXX_ERROR(pLogger,
+						"Discarding the transaction since it is for another server");
 			}
 
 		}
 
 // Send data back to client
-
-		long int SendData = sendto(lServerUDPSocket, (const void*) buffer,
-				sizeof(ResponsePacket), 0, (struct sockaddr*) &SocketAddr,
-				sizeof(sockaddr_in));
-		{
-			if (SendData < 0) {
-
-				LOG4CXX_FATAL(pLogger, " Error - " << strerror(errno));
-				return 0;
-			} else {
-				LOG4CXX_INFO(pLogger,
-						" Data Successfully send- " << strerror(errno));
-				return 0;
-			}
-		}
+//		long int SendData = sendto(lServerUDPSocket, (const void*) buffer,
+//				sizeof(ResponsePacket), 0, (struct sockaddr*) &SocketAddr,
+//				sizeof(sockaddr_in));
+//		{
+//			if (SendData < 0) {
+//
+//				LOG4CXX_FATAL(pLogger, " Error - " << strerror(errno));
+//				return 0;
+//			} else {
+//				LOG4CXX_INFO(pLogger,
+//						" Data Successfully send- " << strerror(errno));
+//				return 0;
+//			}
+//		}
 	}
 
 }

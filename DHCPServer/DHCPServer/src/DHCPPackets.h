@@ -88,7 +88,7 @@ struct ResponsePacket{
 	unsigned char mClientHardwareAddress[16]; // 6 byte
 	char mServerName[64]; // 64 byte
 	char mBootFileName[128]; // 128 byte
-
+	char mMagicCookie[4];
 };
 
 //Acknowledgment Packet
@@ -112,8 +112,8 @@ struct AcknowledgmentPacket {
 struct RequestPacketPS{
 
 	char mProtocolType; //1 byte
-	unsigned short mOpField; //1 byte
-	unsigned short mServerId; //2 byte
+	char mOpField; //1 byte
+	unsigned short int mServerId; //2 byte
 	unsigned int mChecksum; //4 byte
 	char mSourceHardwareAddress[6]; //6 byte
 	unsigned int mRequestId; //4 byte

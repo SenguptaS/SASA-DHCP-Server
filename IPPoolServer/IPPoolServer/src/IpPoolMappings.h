@@ -20,7 +20,7 @@ public:
 	int insertMapping(string lMacAddress, string lIpAddress);
 	int deleteMapping(string lMacAddress, string lIpAddress);
 	int setBindingFlag(string lMacAddress, string lIpAddress);
-	int updateLease();
+	int updateLease(string lMacAddress, string lIpAddress);
 	int deleteMappingAsLeaseExpires();
 	bool checkValidity(string lMacAddress, string lIpAddress);
 

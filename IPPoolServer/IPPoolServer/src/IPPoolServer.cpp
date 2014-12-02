@@ -25,6 +25,7 @@
 #include "sasaPackets.h"
 #include "sasaProtocol.h"
 
+
 using namespace std;
 
 void *SocketThread(void *pArguments) {
@@ -33,26 +34,28 @@ void *SocketThread(void *pArguments) {
 
 	ThreadPassable* pThreadPassable =(ThreadPassable*) pArguments;
 	unsigned char lPacketBuffer[1024];
-	sasaProtocol lSasaProtocol(pThreadPassable->mSettings);
-
 	int lRecdBytes =0;
 	int lBytesSent =0;
+	responsePacket* pResPacket;
 
 	while ( lRecdBytes = read(pThreadPassable->mClientSocket,lPacketBuffer,sizeof(requestPacket)))
 	{
+		sasaProtocol lSasaProtocol(pThreadPassable->mSettings);
 		requestPacket* pReqPacket = (requestPacket*) lPacketBuffer;
 		lSasaProtocol.setRequestPacket(pReqPacket);
 		lSasaProtocol.ipRequestProcessing();
-		responsePacket* pResPacket;
+
 		pResPacket = lSasaProtocol.getResponsePacket();
-		lBytesSent = send(pThreadPassable->mClientSocket,(void*) &pResPacket,sizeof(responsePacket),0);
 
-		if(lBytesSent < 0) {
-			LOG4CXX_ERROR(pLogger,"Failed to send response packet to client "
-					<< inet_ntoa(pThreadPassable->mClientIP.sin_addr)
-					<< " - " << strerror((int)errno));
+		if(pResPacket != NULL){
+			lBytesSent = send(pThreadPassable->mClientSocket,(void*) pResPacket, sizeof(responsePacket),0);
+
+			if(lBytesSent < 0) {
+				LOG4CXX_ERROR(pLogger,"Failed to send response packet to client "
+						<< inet_ntoa(pThreadPassable->mClientIP.sin_addr)
+						<< " - " << strerror((int)errno));
+			}
 		}
-
 	}
 
 	delete pThreadPassable;
@@ -65,8 +68,9 @@ int main(int argc, char *argv[]) {
 	char lbuffer[BUFFER_SIZE];
 	struct sockaddr_in lServerAddr;
 	struct sockaddr_in lClientAddr;
-	fd_set lRead_fds;
 	socklen_t lClientAddressSize = sizeof(sockaddr_in);
+
+
 
 	log4cxx::PropertyConfigurator::configure("log.cfg");
 	log4cxx::LoggerPtr pLogger = log4cxx::Logger::getLogger(ROOT_LOGGER);
@@ -106,15 +110,33 @@ int main(int argc, char *argv[]) {
 	lPool.InitializePool();
 	bool isCleanStart = false;
 
-	lDBConn.setMQuery("SELECT count(*) FROM ip_mapping");
+	lDBConn.setMQuery("SELECT * FROM ip_mapping");
+	int lResult = lDBConn.fireQuery();
+	StoreQueryResult sqr;
 
-	StoreQueryResult sqr = lDBConn.getMResult();
+	if(lResult==0)
+		sqr = lDBConn.getMResult();
+	else{
+		LOG4CXX_ERROR(pLogger,
+							"Failed to detect clean/ unclean startup of the server. Server shutting down.");
+		return EXIT_FAILURE;
+	}
 
-	if (sqr == NULL || sqr.num_rows() <= 0) {
-		LOG4CXX_INFO(pLogger, "Detected clean start");
-		isCleanStart = true;
-	} else {
+
+//	if (sqr == NULL || sqr.num_rows() <= 0) {
+//		LOG4CXX_INFO(pLogger, "Detected clean start");
+//		isCleanStart = true;
+//	} else {
+//		isCleanStart = false;
+//	}
+
+	if(sqr.num_rows() > 0){
+		LOG4CXX_INFO(pLogger, "Clean startup not detected..starting server with previous state restored");
 		isCleanStart = false;
+	}
+	else{
+		LOG4CXX_INFO(pLogger, "Detected clean start..starting server in initial state");
+		isCleanStart = true;
 	}
 
 	if (isCleanStart) {
@@ -138,6 +160,10 @@ int main(int argc, char *argv[]) {
 						sqr[x]["num_ips"]);
 			}
 		}
+	}
+	else{
+
+
 	}
 	//===================================================
 
@@ -185,6 +211,7 @@ int main(int argc, char *argv[]) {
 				pThreadPassable->mClientSocket = lNewSocketFd;
 				pThreadPassable->mClientIP = lClientAddr;
 
+				pthread_attr_init(&lThreadAttr);
 				int ThreadRetval = pthread_create(&lNewThread,&lThreadAttr,SocketThread,pThreadPassable);
 				if(ThreadRetval)
 				{
