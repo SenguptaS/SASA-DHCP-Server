@@ -71,6 +71,7 @@ int main(int argc, char *argv[]) {
 	socklen_t lClientAddressSize = sizeof(sockaddr_in);
 
 
+
 	log4cxx::PropertyConfigurator::configure("log.cfg");
 	log4cxx::LoggerPtr pLogger = log4cxx::Logger::getLogger(ROOT_LOGGER);
 	time_t mTimeNow = time(NULL);

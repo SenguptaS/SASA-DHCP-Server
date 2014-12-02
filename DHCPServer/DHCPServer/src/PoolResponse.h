@@ -10,20 +10,24 @@
 
 #include <log4cxx/logger.h>
 #include "sasaPackets.h"
+#include "TransactionIDMapper.h"
 
 class PoolResponse {
 
 public:
 	PoolResponse(unsigned short nServerIdentifier,
-			std::string nInterfaceIpAddress, int nUDPSocket);
+			std::string nInterfaceIpAddress, int nUDPSocket,TransactionIDMapper *pTransactionMapper);
 	virtual ~PoolResponse();
 	int ProcessIPOffer(SASA_responsePacket* pResponsePacket,std::string nInterfaceIpAddress, int nUDPSocket);
 	int SendACK(SASA_responsePacket* pResponsePacket,std::string nInterfaceIpAddress, int nUDPSocket);
+	int SendNAK(SASA_responsePacket* pResponsePacket,std::string nInterfaceIpAddress,int nUDPSocket);
+
 private:
 	log4cxx::LoggerPtr pLogger;
 	unsigned short lServerIdentifier;
 	std::string lLocalServerIPAddress;
 	int lUDPSocket;
+	TransactionIDMapper *lpTransactionMapper;
 
 #pragma pack(1)
 	struct OPHeader {

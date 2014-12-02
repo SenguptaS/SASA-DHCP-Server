@@ -236,8 +236,15 @@ void* IPPoolServerCommunicator::ResponseCommunicatorThread(void *pParams) {
 			SASA_responsePacket *pPoolResponsePacket =
 					(SASA_responsePacket *) pIncomingPacketBuffer;
 			if (pPoolResponsePacket->mOpField == 2) {
-				pParent->mpResponse->ProcessIPOffer(pPoolResponsePacket,
-						pParent->mServerIPAddress, pParent->mClientSocket);
+				if( pParent->mpResponse->ProcessIPOffer(pPoolResponsePacket,
+						pParent->mServerIPAddress, pParent->mClientSocket) <= 0)
+				{
+					in_addr lIp;
+					lIp.s_addr = pPoolResponsePacket->mAllocatedIp;
+					std::string lFormattedIP;
+					lFormattedIP.assign(inet_ntoa(lIp));
+					pParent->releaseIp((char*) pPoolResponsePacket->mSrcHwAddress,lFormattedIP,pPoolResponsePacket->mRequestId);
+				}
 			} else if (pPoolResponsePacket->mOpField == 4) {
 				pParent->mpResponse->SendACK(pPoolResponsePacket,
 						pParent->mServerIPAddress, pParent->mClientSocket);
