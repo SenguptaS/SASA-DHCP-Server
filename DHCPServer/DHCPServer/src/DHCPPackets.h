@@ -48,7 +48,7 @@ struct DiscoverPacket {
 	unsigned int mYourAddress; // 4 byte
 	unsigned int mServerAddress; // 4 byte
 	unsigned int mGatewayAddress; // 4 byte
-	unsigned char mClientHardwareAddress[16]; // 16 byte
+	char mClientHardwareAddress[16]; // 16 byte
 	char 	mServerName[64]; // 64 byte
 	char mBootFileName[128]; // 128 byte
 	char mMagicCookie[4]; // 4 Bytes
