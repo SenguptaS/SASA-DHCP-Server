@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
 				return EXIT_FAILURE;
 			}
 
-		} else if (strcmp(argv[x], "-lServerUDPSocket") == 0) {
+		} else if (strcmp(argv[x], "-s") == 0) {
 			lIpServer.assign(argv[x + 1]);
 		} else if (strcmp(argv[x], "-p") == 0) {
 			lServerPort.assign(argv[x + 1]);
