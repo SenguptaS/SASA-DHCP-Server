@@ -21,6 +21,7 @@
 #include "DHCPPackets.h"
 #include "DHCPServerConstants.h"
 #include "sasaPackets.h"
+#include "Utility.h"
 
 IPPoolServerCommunicator::IPPoolServerCommunicator(std::string lServerIPAddress,
 		int lServerPort, unsigned short lServerIdentifer,
@@ -78,6 +79,8 @@ int IPPoolServerCommunicator::getIpLease(char* mac, std::string previousIp,
 	r.mServerId = mServerIdentifier;
 	r.mProtocolType = 4;
 
+	unsigned int lChecksum = Utility::GetChecksum((char*)&r,sizeof(RequestPacketPS));
+	r.mChecksum = lChecksum;
 	//Send the packet to the IP Pool server and recv a response
 	int bSent = send(this->mClientSocket, &r, sizeof(RequestPacketPS), 0);
 	if (bSent < 0) {
@@ -85,7 +88,7 @@ int IPPoolServerCommunicator::getIpLease(char* mac, std::string previousIp,
 				"Failed sending request to IP Pool server " << strerror(errno));
 		return 0;
 	} else {
-		LOG4CXX_ERROR(pLogger, "Sent request to ip pool");
+		LOG4CXX_ERROR(pLogger, "Sent IP request to pool for transaction ID:" << transactionId << " packet checksum: " << lChecksum );
 		return 1;
 	}
 
@@ -111,6 +114,9 @@ int IPPoolServerCommunicator::confirmIp(char* mac, std::string ip,
 	r.mServerId = mServerIdentifier;
 	r.mProtocolType = 4;
 
+	unsigned int lChecksum = Utility::GetChecksum((char*)&r,sizeof(RequestPacketPS));
+	r.mChecksum = lChecksum;
+
 	//Send the packet to the IP Pool server and recv a response
 	int bSent = send(this->mClientSocket, &r, sizeof(RequestPacketPS), 0);
 	if (bSent < 0) {
@@ -118,7 +124,7 @@ int IPPoolServerCommunicator::confirmIp(char* mac, std::string ip,
 				"Failed sending request to IP Pool server " << strerror(errno));
 		return 0;
 	} else {
-		LOG4CXX_ERROR(pLogger, "Sent IP confirmation to pool");
+		LOG4CXX_ERROR(pLogger, "Sent IP confirmation to pool for IP " << ip << " with transaction id: " << ltransactionID);
 		return 1;
 	}
 
@@ -139,6 +145,9 @@ int IPPoolServerCommunicator::releaseIp(char* mac, std::string ip,
 	r.mServerId = mServerIdentifier;
 	r.mProtocolType = 4;
 
+	unsigned int lChecksum = Utility::GetChecksum((char*)&r,sizeof(RequestPacketPS));
+	r.mChecksum = lChecksum;
+
 	//Send the packet to the IP Pool server and recv a response
 	int bSent = send(this->mClientSocket, &r, sizeof(RequestPacketPS), 0);
 	if (bSent < 0) {
@@ -146,7 +155,7 @@ int IPPoolServerCommunicator::releaseIp(char* mac, std::string ip,
 				"Failed sending request to IP Pool server " << strerror(errno));
 		return 0;
 	} else {
-		LOG4CXX_ERROR(pLogger, "Sent IP Release to pool");
+		LOG4CXX_ERROR(pLogger, "Sent IP Release to pool for IP:" << ip << " transaction ID: " << transactionID << " checksum: " << lChecksum);
 		return 1;
 	}
 
@@ -167,6 +176,9 @@ int IPPoolServerCommunicator::InfoRequest(char* mac, std::string ip,
 	r.mServerId = mServerIdentifier;
 	r.mProtocolType = 4;
 
+	unsigned int lChecksum = Utility::GetChecksum((char*)&r,sizeof(RequestPacketPS));
+	r.mChecksum = lChecksum;
+
 	//Send the packet to the IP Pool server and recv a response
 	int bSent = send(this->mClientSocket, &r, sizeof(RequestPacketPS), 0);
 	if (bSent < 0) {
@@ -174,7 +186,7 @@ int IPPoolServerCommunicator::InfoRequest(char* mac, std::string ip,
 				"Failed sending request to IP Pool server " << strerror(errno));
 		return 0;
 	} else {
-		LOG4CXX_ERROR(pLogger, "Sent IP Info Request to pool");
+		LOG4CXX_ERROR(pLogger, "Sent IP Info Request to pool for IP: " << ip << " transaction ID:" << transactionID << " with checksum: " << lChecksum);
 		return 1;
 	}
 
@@ -235,6 +247,15 @@ void* IPPoolServerCommunicator::ResponseCommunicatorThread(void *pParams) {
 
 			SASA_responsePacket *pPoolResponsePacket =
 					(SASA_responsePacket *) pIncomingPacketBuffer;
+
+			unsigned int lChecksum =pPoolResponsePacket->mChecksum;
+			pPoolResponsePacket->mChecksum =0;
+			if(!Utility::VerifyChecksum((char*)pPoolResponsePacket,sizeof(SASA_responsePacket),lChecksum))
+			{
+				LOG4CXX_ERROR(lLogger,"Checksum verification failed for incoming pool response.");
+				continue;
+			}
+
 			if (pPoolResponsePacket->mOpField == 2) {
 				if( pParent->mpResponse->ProcessIPOffer(pPoolResponsePacket,
 						pParent->mServerIPAddress, pParent->mClientSocket) <= 0)

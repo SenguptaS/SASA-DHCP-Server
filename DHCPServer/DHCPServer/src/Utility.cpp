@@ -18,6 +18,28 @@ Utility::~Utility() {
 	// TODO Auto-generated destructor stub
 }
 
+unsigned int Utility::GetChecksum(char* pBuffer,unsigned int size)
+{
+	unsigned int lChecksum =0;
+
+	for(unsigned int x=0;x<size;x++)
+	{
+		lChecksum += pBuffer[x];
+		lChecksum = lChecksum % 0xFFFFFFFF;
+	}
+	return lChecksum;
+}
+
+bool Utility::VerifyChecksum(char* pBuffer,unsigned int size,unsigned int checksum)
+{
+	unsigned int lCaclulatedChecksum = Utility::GetChecksum(pBuffer,size);
+	if(lCaclulatedChecksum == checksum)
+	{
+		return true;
+	}
+	return false;
+}
+
 
 char* Utility::GetPrintableMac(char* pMacIn)
 {
