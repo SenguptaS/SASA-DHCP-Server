@@ -37,17 +37,33 @@ void *SocketThread(void *pArguments) {
 	int lRecdBytes =0;
 	int lBytesSent =0;
 	responsePacket* pResPacket;
+	unsigned int lChecksum;
+	bool lcheck = false;
 
 	while ( lRecdBytes = read(pThreadPassable->mClientSocket,lPacketBuffer,sizeof(requestPacket)))
 	{
 		sasaProtocol lSasaProtocol(pThreadPassable->mSettings);
 		requestPacket* pReqPacket = (requestPacket*) lPacketBuffer;
+
+		lChecksum = pReqPacket->mChecksum;
+		pReqPacket->mChecksum = 0;
+		lcheck = Utility::VerifyChecksum((char*)pReqPacket,sizeof(requestPacket),lChecksum);
+
+		if(!lcheck){
+			LOG4CXX_ERROR(pLogger,"Error detected in the received packet..discarding the packet");
+			continue;
+		}
+
 		lSasaProtocol.setRequestPacket(pReqPacket);
 		lSasaProtocol.ipRequestProcessing();
 
 		pResPacket = lSasaProtocol.getResponsePacket();
 
 		if(pResPacket != NULL){
+			pResPacket->mChecksum = 0;
+			lChecksum = Utility::GetChecksum((char*)pResPacket, sizeof(responsePacket));
+			pResPacket->mChecksum = lChecksum;
+
 			lBytesSent = send(pThreadPassable->mClientSocket,(void*) pResPacket, sizeof(responsePacket),0);
 
 			if(lBytesSent < 0) {
