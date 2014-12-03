@@ -13,6 +13,9 @@ class Utility {
 public:
 	static char macBuffer[128];
 	static char* GetPrintableMac(char* pMacIn);
+	static unsigned int GetChecksum(char* pBuffer, unsigned int size);
+	static bool VerifyChecksum(char* pBuffer, unsigned int size,
+			unsigned int checksum);
 	Utility();
 	virtual ~Utility();
 };
