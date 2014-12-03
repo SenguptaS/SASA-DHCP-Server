@@ -68,9 +68,10 @@ int ReservedIpMappings::getReservedIp(string pMacAddress, string &pIpAddress){
 	ostringstream lStrStream;
 	int lResult;
 	IPPool lIpPool(mSettings);
+	StoreQueryResult lStoreQueryResult;
 
 	lStrStream.str("");
-	lStrStream << "SELECT ip_address INTO "<< pIpAddress <<" FROM ip_reserved WHERE client_host='"<< pMacAddress<< "';";
+	lStrStream << "SELECT ip_address FROM ip_reserved WHERE client_host='"<< pMacAddress<< "';";
 	mDatabaseConnection.setMQuery(lStrStream.str());
 	lResult = mDatabaseConnection.fireQuery();
 
@@ -79,7 +80,10 @@ int ReservedIpMappings::getReservedIp(string pMacAddress, string &pIpAddress){
 		return -1;
 	}
 
-	if(pIpAddress.length() <= 0){
+	lStoreQueryResult = mDatabaseConnection.getMResult();
+	pIpAddress = (string)lStoreQueryResult[0][0];
+
+	if(pIpAddress.empty()){
 		LOG4CXX_ERROR(mPLogger,"Failed to retrieve reserved ip for client with MAC= "<< pMacAddress);
 		return -1;
 	}
