@@ -53,7 +53,7 @@ void *SocketThread(void *pArguments) {
 			LOG4CXX_ERROR(pLogger,"Error detected in the received packet..discarding the packet");
 			continue;
 		}
-
+		LOG4CXX_INFO(pLogger,"Checksum is validated..hence processing the received packet");
 		lSasaProtocol.setRequestPacket(pReqPacket);
 		lSasaProtocol.ipRequestProcessing();
 
@@ -63,6 +63,7 @@ void *SocketThread(void *pArguments) {
 			pResPacket->mChecksum = 0;
 			lChecksum = Utility::GetChecksum((char*)pResPacket, sizeof(responsePacket));
 			pResPacket->mChecksum = lChecksum;
+			LOG4CXX_INFO(pLogger,"Checksum added to the response packet..sending the response packet");
 
 			lBytesSent = send(pThreadPassable->mClientSocket,(void*) pResPacket, sizeof(responsePacket),0);
 

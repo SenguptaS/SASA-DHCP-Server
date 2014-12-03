@@ -208,10 +208,6 @@ bool IpPoolMappings::checkValidity(string lMacAddress, string lIpAddress) {
 		LOG4CXX_ERROR(mPLogger,
 				"IP-MAC mapping with IP= "<< inet_ntoa(lInAddr)<<" and MAC= "<<lMacAddress <<" does not exist");
 		return false;
-	} else {
-		LOG4CXX_ERROR(mPLogger,
-				"IP-MAC mapping with IP= "<< inet_ntoa(lInAddr)<<" and MAC= "<<lMacAddress <<" exist multiple times");
-		return false;
 	}
 }
 

@@ -11,9 +11,10 @@
 #include <arpa/inet.h>
 #include <mysql++/connection.h>
 #include "IPPoolServerConstants.h"
+#include "ReservedIpMappings.h"
 
-IPPool::IPPool(Settings lSettings) :
-		mDatabaseConnection(lSettings) {
+IPPool::IPPool(const Settings& lSettings) :
+		mDatabaseConnection(lSettings), mSettings(lSettings) {
 	this->InitializePool();
 
 }
@@ -123,23 +124,27 @@ int IPPool::SetAvailable(std::string lStartingAddress,
 
 int IPPool::GetNextFreeIP(std::string& lNextFreeIP) {
 	std::ostringstream lOss;
-	lOss << "SELECT * FROM `ip_pool` WHERE `flag`='N' LIMIT 1";
-	mDatabaseConnection.setMQuery(lOss.str());
+	ReservedIpMappings lReservedIpMappings(mSettings);
 
-	if (mDatabaseConnection.fireQuery() < 0) {
-		LOG4CXX_ERROR(pLogger, "Failed to get free ip from pool");
-		return -1;
-	}
+	do{
+		lOss << "SELECT * FROM `ip_pool` WHERE `flag`='N' LIMIT 1";
+		mDatabaseConnection.setMQuery(lOss.str());
 
-	StoreQueryResult lResult = mDatabaseConnection.getMResult();
-	if (lResult == NULL || lResult.num_rows() <= 0) {
-		LOG4CXX_ERROR(pLogger, "No free ip address available in pool");
-		return -1;
-	}
+		if (mDatabaseConnection.fireQuery() < 0) {
+			LOG4CXX_ERROR(pLogger, "Failed to get free ip from pool");
+			return -1;
+		}
 
-	lOss.str("");
-	lOss << (string) lResult[0]["ip_address"];
-	lNextFreeIP = lOss.str();
+		StoreQueryResult lResult = mDatabaseConnection.getMResult();
+		if (lResult == NULL || lResult.num_rows() <= 0) {
+			LOG4CXX_ERROR(pLogger, "No free ip address available in pool");
+			return -1;
+		}
+
+		lOss.str("");
+		lOss << (string) lResult[0]["ip_address"];
+		lNextFreeIP = lOss.str();
+	} while(lReservedIpMappings.checkIfReservedIp(lNextFreeIP) != 1);
 
 	if (this->SetIPAddressState(lNextFreeIP, true) < 0) {
 		lNextFreeIP = "";

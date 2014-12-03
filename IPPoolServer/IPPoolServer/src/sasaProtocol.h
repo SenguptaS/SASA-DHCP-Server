@@ -181,15 +181,17 @@ int sasaProtocol::staticIpOffer(){
 				inet_aton(lIpAddr.c_str(),&lINAddr);
 				mResPack->mAllocatedIp = lINAddr.s_addr;
 
-				// insert the entry of ip-mac into mapping table
-				if(lIpPoolMapping.insertMapping(lSrcHwdAddr, lIpAddr)){
-					LOG4CXX_ERROR(mPLogger,"IP-MAC mapping failed to be created..");
-					return -1;
+				if(!lIpPoolMapping.checkValidity(lSrcHwdAddr, lIpAddr)){
+					// insert the entry of static ip-mac into mapping table if not already created
+					if(lIpPoolMapping.insertMapping(lSrcHwdAddr, lIpAddr)){
+						LOG4CXX_ERROR(mPLogger,"IP-MAC mapping failed to be created..");
+						return -1;
+					}
+					else{
+						LOG4CXX_INFO(mPLogger,"IP-MAC mapping successfully created..");
+					}
 				}
-				else{
-					LOG4CXX_INFO(mPLogger,"IP-MAC mapping successfully created..");
-				}
-
+				LOG4CXX_INFO(mPLogger,"IP-MAC mapping successfully created..");
 				mResPack->mOpField = 2;
 				getOtherConfiguration();
 

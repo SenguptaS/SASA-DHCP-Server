@@ -10,14 +10,16 @@
 
 #include <string>
 #include "databaseConnection.h"
+#include "Settings.h"
 
 class IPPool {
 private:
+	const Settings& mSettings;
 	databaseConnection mDatabaseConnection;
 	log4cxx::LoggerPtr pLogger;
 
 public:
-	IPPool(Settings lSettings);
+	IPPool(const Settings& lSettings);
 	virtual ~IPPool();
 	int InitializePool();
 	int AddIPRange(std::string lStartingAddress,unsigned int nNumberOfIPS );
