@@ -27,7 +27,7 @@ IPPoolServerCommunicator::IPPoolServerCommunicator(std::string lServerIPAddress,
 		int lServerPort, unsigned short lServerIdentifer,
 		PoolResponse *pResponse) {
 
-	mServerIPAddress = lServerIPAddress;
+	mServerIPAddress = lServerIPAddress;   //explain plz
 	mServerPort = lServerPort;
 	mServerIdentifier = lServerIdentifer;
 	mRun = 0;

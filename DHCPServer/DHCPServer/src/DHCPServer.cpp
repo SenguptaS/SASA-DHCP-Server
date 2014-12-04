@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
-	int optVal = 1;
+	int optVal = 1; // use ?
 	optVal = setsockopt(lServerUDPSocket, SOL_SOCKET, SO_BROADCAST, &optVal,
 			sizeof(int));
 	if (optVal < 0) {
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	PoolResponse lPoolResponse(lServerIdentifier, lInterfaceAddress,
-			lServerUDPSocket,&lTransactionIDMapper);
+			lServerUDPSocket, &lTransactionIDMapper);
 
 	//Start the ip pool sever communicator
 	IPPoolServerCommunicator ipsc(lIpServer,
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
 		int lSizeOfPacketRecvd = recvfrom(lServerUDPSocket, buffer, 1024, 0,
 				(struct sockaddr*) &SocketAddr, &lSizeOfStructure);
 
-		std::string lServerIdentifierStr = "";
+		std::string lServerIdentifierStr = ""; //holds the dhcp server ip address in string format
 
 		if (lSizeOfPacketRecvd < 0) {
 			LOG4CXX_FATAL(pLogger,
@@ -153,9 +153,6 @@ int main(int argc, char* argv[]) {
 					"Failed to recv packet - Peer has closed the socket");
 			continue;
 		} else {
-			LOG4CXX_INFO(pLogger,
-					"Recvd a udp packet of length: " << lSizeOfPacketRecvd);
-
 //			for (int lCtr = 0; lCtr < lSizeOfPacketRecvd; lCtr++) {
 //				printf("0x%02X ", buffer[lCtr]);
 //			}
@@ -222,15 +219,13 @@ int main(int argc, char* argv[]) {
 					}
 
 					else if (bData == 4) {
-
 						LOG4CXX_INFO(pLogger, " Value(4): DHCPDECLINE");
-					} else if (bData == 5) {
-
-						LOG4CXX_INFO(pLogger, " Value(5): DHCPACK");
 						lReqType = DHCP_NACK;
+					} else if (bData == 5) {
+						LOG4CXX_INFO(pLogger, " Value(5): DHCPACK");
 					} else if (bData == 6) {
-
 						LOG4CXX_INFO(pLogger, " Value(6): DHCPNACK");
+						lReqType = DHCP_NACK;
 					} else if (bData == 7) {
 						lReqType = DHCP_RELEASE;
 						LOG4CXX_INFO(pLogger, " Value(7): DHCPRELEASE");
@@ -242,6 +237,7 @@ int main(int argc, char* argv[]) {
 					else {
 
 						LOG4CXX_ERROR(pLogger, " UNKNOWN DHCP OPTION ");
+						break;
 					}
 				} else if (bOption == 54) {
 					sockaddr_in lServerIdentifier;
@@ -289,18 +285,23 @@ int main(int argc, char* argv[]) {
 				memcpy(lClientMac, pDiscoverPacket->mClientHardwareAddress, 6);
 			}
 
-			if (lServerIdentifierStr.compare("") ==0 || lServerIdentifierStr.compare(lInterfaceAddress) == 0) {
-				RequestPacketHolder* pRequestHolder = lTransactionIDMapper.GetPacketForTransactionID(pDiscoverPacket->mTransactionId);
+			if (lServerIdentifierStr.compare("") == 0
+					|| lServerIdentifierStr.compare(lInterfaceAddress) == 0) {
+				RequestPacketHolder* pRequestHolder =
+						lTransactionIDMapper.GetPacketForTransactionID(
+								pDiscoverPacket->mTransactionId);
 
-				if(pRequestHolder !=NULL )
-				{
-					LOG4CXX_INFO(pLogger,"Duplicate Request for transaction id " << pDiscoverPacket->mTransactionId);
+				if (pRequestHolder != NULL) {
+					LOG4CXX_INFO(pLogger,
+							"Duplicate Request for transaction id " << pDiscoverPacket->mTransactionId);
 					continue;
 				}
 
-				LOG4CXX_INFO(pLogger,"No previous entry found for transaction " << pDiscoverPacket->mTransactionId << " PrevIP:" << lPreviousIPAddress);
+				LOG4CXX_INFO(pLogger,
+						"No previous entry found for transaction " << pDiscoverPacket->mTransactionId << " PrevIP:" << lPreviousIPAddress);
 
-				pRequestHolder = new RequestPacketHolder(pDiscoverPacket->mTransactionId,lPreviousIPAddress);
+				pRequestHolder = new RequestPacketHolder(
+						pDiscoverPacket->mTransactionId, lPreviousIPAddress);
 				lTransactionIDMapper.AddRequestPacketHolder(pRequestHolder);
 
 				if (lReqType == DHCP_DISCOVER) {
@@ -325,22 +326,6 @@ int main(int argc, char* argv[]) {
 			}
 
 		}
-
-// Send data back to client
-//		long int SendData = sendto(lServerUDPSocket, (const void*) buffer,
-//				sizeof(ResponsePacket), 0, (struct sockaddr*) &SocketAddr,
-//				sizeof(sockaddr_in));
-//		{
-//			if (SendData < 0) {
-//
-//				LOG4CXX_FATAL(pLogger, " Error - " << strerror(errno));
-//				return 0;
-//			} else {
-//				LOG4CXX_INFO(pLogger,
-//						" Data Successfully send- " << strerror(errno));
-//				return 0;
-//			}
-//		}
 	}
 
 }

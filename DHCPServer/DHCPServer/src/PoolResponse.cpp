@@ -257,7 +257,7 @@ int PoolResponse::SendACK(SASA_responsePacket* pResponsePacket,
 	lInAddr.s_addr = pResponsePacket->mAllocatedIp;
 
 	LOG4CXX_INFO(pLogger,
-			"Sent " << lBytesSent << " to client - " << inet_ntoa(lInAddr));
+			"Sent DHCP ACK packet " << lBytesSent << " to client - " << inet_ntoa(lInAddr));
 	return lBytesSent;
 }
 
